@@ -1,51 +1,28 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script>{% extends 'base.html' %}
+{% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
 Knights of Columbus - Manage Pending Users
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1>Manage Pending Users</h1>
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}?v={% now 'U' %}">
+
+<div class="dashboard-container">
+    <div class="content-card">
+        <div class="dashboard-header">
+            <h1>Pending User Requests</h1>
+            <div>
+                <a href="{% url 'dashboard' %}" class="dashboard-btn secondary back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'my_recruits' %}" class="dashboard-btn">
+                    <i class="fas fa-users"></i> View My Recruits
+                </a>
+                {% endif %}
+            </div>
+        </div>
     
     {% if messages %}
     <div class="message-container">
@@ -57,134 +34,697 @@ Knights of Columbus - Manage Pending Users
     </div>
     {% endif %}
     
-    {% if pending_users %}
-        <table class="pending-users-table">
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Full Name</th>
-                    <th>Email</th>
-                    <th>Council</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
+        <!-- Search -->
+        <div class="search-container">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="pendingUserSearch" class="search-input" placeholder="Search pending users by name or email...">
+                <button id="clearSearch" class="clear-search"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        
+        <!-- Pending Users List -->
+        <div class="members-list">
                 {% for user in pending_users %}
-                    <tr>
-                        <td>{{ user.username }}</td>
-                        <td>{{ user.first_name }} {{ user.last_name }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>{{ user.council.name }}</td>
-                        <td>
-                            <form method="post" action="{% url 'approve_user' user.id %}" class="role-selection-form">
-                                {% csrf_token %}
-                                <div class="role-selection">
-                                    <select name="role" class="role-select">
-                                        <option value="member">Approve as Member</option>
-                                        {% if request.user.role == 'admin' %}
-                                        <option value="officer">Approve as Officer</option>
+            <div class="member-item">
+                <div class="member-header">
+                    <div class="member-name-section">
+                        {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="member-pic">
+                        {% else %}
+                            <div class="member-pic">
+                                <i class="fas fa-user"></i>
+                            </div>
                                         {% endif %}
-                                    </select>
-                                    <button type="submit" class="btn approve-btn">Approve</button>
+                        <div>
+                            <h3>
+                                {{ user.first_name }}
+                                {% if user.second_name %} {{ user.second_name }}{% endif %}
+                                {% if user.middle_name %} {{ user.middle_name }}{% endif %}
+                                {{ user.last_name }}
+                                {% if user.suffix %} {{ user.suffix }}{% endif %}
+                            </h3>
+                            <span class="role-badge role-pending">Pending</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="member-details">
+                    <div class="detail-column">
+                        <p><strong>Username:</strong> {{ user.username }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                    </div>
+                    <div class="detail-column">
+                        <p><strong>Council:</strong> {{ user.council.name }}</p>
+                        <p><strong>Applied On:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="dashboard-btn view-member-btn" data-user-id="{{ user.id }}">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-user-check"></i>
+                <p>No pending users to review.</p>
+                <p>All membership requests have been processed.</p>
                                 </div>
-                            </form>
-                            <a href="{% url 'reject_user' user.id %}" class="btn reject-btn">Reject</a>
-                        </td>
-                    </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No pending users to review.</p>
-    {% endif %}
-    <a href="{% url 'dashboard' %}" class="back-link">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<!-- Member details modal -->
+<div id="memberDetailsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Pending Member Details</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div id="memberDetailsContent">
+            <div class="loading">Loading member details...</div>
+        </div>
+        <div class="modal-footer" id="modalFooter">
+            <!-- Approval/rejection buttons will be added dynamically -->
+        </div>
+    </div>
 </div>
 
 <style>
-    body {
-        background-color: #0d3471; 
-    }
-    .pending-users-table {
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(13, 52, 113, 0.1);
+}
+
+.search-container {
+    margin-bottom: 2rem;
+}
+
+.search-wrapper {
+    position: relative;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid rgba(13, 52, 113, 0.2);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background-color: white;
+    transition: box-shadow 0.2s ease;
+}
+
+.clear-search {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    display: none;
+    padding: 0;
+    font-size: 1rem;
+}
+
+.members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.member-item {
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.member-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.member-name-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.member-pic {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.member-pic i {
+    font-size: 1.8rem;
+    color: #0D3471;
+}
+
+.member-pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--heading-color);
+}
+
+.member-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.detail-column {
+    flex: 1;
+    min-width: 200px;
+}
+
+.detail-column p {
+    margin: 0.5rem 0;
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.role-pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #adb5bd;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
         width: 100%;
-        border-collapse: collapse;
-        margin: 20px 0;
-    }
-    .pending-users-table th, .pending-users-table td {
-        padding: 10px;
-        border: 1px solid #ddd;
-        text-align: left;
-    }
-    .pending-users-table th {
-        background-color: #003087;
-        color: white;
-    }
-    .pending-users-table tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    .btn {
-        padding: 5px 10px;
-        text-decoration: none;
-        border-radius: 3px;
-        margin-right: 5px;
-        border: none;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+}
+
+.modal-content {
+    background-color: var(--secondary-bg);
+    margin: 10% auto;
+    border-radius: var(--border-radius);
+    max-width: 700px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--heading-color);
+}
+
+#memberDetailsContent {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    text-align: right;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.close {
+    font-size: 1.5rem;
         cursor: pointer;
-    }
+    color: #aaa;
+    transition: color 0.2s ease;
+}
+
+.close:hover {
+    color: var(--primary-bg);
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: var(--heading-color);
+}
+
+.detail-group {
+    margin-bottom: 1rem;
+}
+
+.detail-group strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #0D3471;
+}
+
+.profile-image-container {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.profile-image {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #0D3471;
+}
+
+.profile-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: #0D3471;
+}
+
+.e-signature-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+}
+
+.e-signature-image {
+    max-width: 100%;
+    max-height: 200px;
+}
+
     .approve-btn {
         background-color: #28a745;
         color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
     }
+
     .reject-btn {
         background-color: #dc3545;
         color: white;
-    }
-    .back-link {
-        display: inline-block;
-        margin-top: 20px;
-        color: #003087;
-        text-decoration: underline;
-    }
-    .role-selection-form {
-        display: inline-block;
-        margin-right: 5px;
-    }
-    .role-selection {
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.role-selection-container {
         display: flex;
         align-items: center;
+    gap: 1rem;
     }
+
     .role-select {
-        padding: 4px;
-        margin-right: 5px;
-        border-radius: 3px;
-        border: 1px solid #ccc;
-    }
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid #ced4da;
+}
+
     .message-container {
         margin-bottom: 20px;
     }
+
     .alert {
         padding: 10px;
         border-radius: 5px;
         margin-bottom: 10px;
     }
+
     .alert-success {
         background-color: #d4edda;
         color: #155724;
         border: 1px solid #c3e6cb;
     }
+
     .alert-danger {
         background-color: #f8d7da;
         color: #721c24;
         border: 1px solid #f5c6cb;
     }
+
     .alert-info {
         background-color: #d1ecf1;
         color: #0c5460;
         border: 1px solid #bee5eb;
     }
+
+.reason-container {
+    display: none;
+    margin-top: 1rem;
+}
+
+.reason-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid #ced4da;
+    min-height: 100px;
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .modal-content {
+        margin: 10% 1rem;
+        max-height: 90vh;
+    }
+    
+    .modal-footer {
+        flex-direction: column;
+    }
+    
+    .role-selection-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.back-btn:hover {
+    background-color: #f4b41a !important;
+    color: white;
+}
 </style>
 
 <script>
-// Make notifications disappear after 5 seconds
 document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality with clear button
+    const searchInput = document.getElementById('pendingUserSearch');
+    const clearButton = document.getElementById('clearSearch');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const memberItems = document.querySelectorAll('.member-item');
+            
+            // Show/hide clear button
+            clearButton.style.display = searchTerm ? 'block' : 'none';
+            
+            memberItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+        
+        // Focus effect
+        searchInput.addEventListener('focus', function() {
+            this.parentElement.style.boxShadow = '0 0 0 3px rgba(13, 52, 113, 0.1)';
+        });
+        
+        searchInput.addEventListener('blur', function() {
+            this.parentElement.style.boxShadow = 'none';
+        });
+    }
+    
+    // Clear search
+    if (clearButton) {
+        clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+    }
+    
+    // View member details
+    const viewMemberBtns = document.querySelectorAll('.view-member-btn');
+    const modal = document.getElementById('memberDetailsModal');
+    const contentDiv = document.getElementById('memberDetailsContent');
+    const modalFooter = document.getElementById('modalFooter');
+    
+    function openModal() {
+        modal.style.display = 'block';
+        // Trigger reflow to allow animation to work
+        modal.offsetHeight;
+        modal.classList.add('show');
+    }
+    
+    function closeModal() {
+        modal.classList.remove('show');
+        setTimeout(function() {
+            modal.style.display = 'none';
+        }, 300); // Match the transition duration
+    }
+    
+    viewMemberBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            
+            openModal();
+            contentDiv.innerHTML = '<div class="loading">Loading member details...</div>';
+            
+            fetch(`/user/${userId}/details/`)
+                .then(response => response.json())
+                .then(data => {
+                    let detailsHTML = `
+                        <div class="member-full-details">
+                            <div class="profile-image-container">
+                                ${data.profile_picture ? 
+                                    `<img src="${data.profile_picture}" alt="Profile Picture" class="profile-image">` : 
+                                    `<div class="profile-placeholder"><i class="fas fa-user"></i></div>`
+                                }
+                            </div>
+                            
+                            <h4>
+                                ${data.first_name}
+                                ${data.second_name ? data.second_name + ' ' : ''}
+                                ${data.middle_name ? data.middle_name + ' ' : ''}
+                                ${data.last_name}
+                                ${data.suffix ? ' ' + data.suffix : ''}
+                            </h4>
+                            <span class="role-badge role-pending">Pending</span>
+                            
+                            <div class="detail-group">
+                                <strong>Username:</strong>
+                                <p>${data.username}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Email:</strong>
+                                <p>${data.email || 'Not provided'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Contact Number:</strong>
+                                <p>${data.contact_number || 'Not provided'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Council:</strong>
+                                <p>${data.council_name || 'Not assigned'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Birthday:</strong>
+                                <p>${data.birthday || 'Not specified'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Age:</strong>
+                                <p>${data.age || 'Not specified'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Address:</strong>
+                                <address>
+                                    ${data.street ? data.street + '<br>' : ''}
+                                    ${data.barangay ? data.barangay + '<br>' : ''}
+                                    ${data.city ? data.city + ', ' : ''}${data.province || ''}
+                                    ${data.zip_code ? '<br>ZIP: ' + data.zip_code : ''}
+                                </address>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Marital Status:</strong>
+                                <p>${data.marital_status || 'Not specified'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Occupation:</strong>
+                                <p>${data.occupation || 'Not specified'}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Recruiter's Name:</strong>
+                                <p>${data.recruiter_name || (data.voluntary_join ? 'Joined voluntarily' : 'Not specified')}</p>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Reason for Joining:</strong>
+                                <p>${data.join_reason || 'Not specified'}</p>
+                            </div>
+                            
+                            ${data.e_signature ? `
+                            <div class="detail-group">
+                                <strong>E-Signature:</strong>
+                                <div class="e-signature-container">
+                                    <img src="${data.e_signature}" alt="E-Signature" class="e-signature-image" onerror="this.onerror=null; this.src='{% static 'img/signature-placeholder.png' %}'; this.alt='Signature not available';">
+                                </div>
+                            </div>
+                            ` : `
+                            <div class="detail-group">
+                                <strong>E-Signature:</strong>
+                                <div class="e-signature-container">
+                                    <p class="text-muted">No signature provided</p>
+                                </div>
+                            </div>
+                            `}
+                            
+                            <div class="detail-group">
+                                <strong>Applied On:</strong>
+                                <p>${data.date_joined}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    contentDiv.innerHTML = detailsHTML;
+                    
+                    // Add approval/rejection buttons to modal footer
+                    modalFooter.innerHTML = `
+                        <div class="role-selection-container">
+                            <form method="post" action="/approve-user/${userId}/" id="approveForm">
+                                {% csrf_token %}
+                                <select name="role" class="role-select">
+                                    <option value="member">Approve as Member</option>
+                                    {% if request.user.role == 'admin' %}
+                                    <option value="officer">Approve as Officer</option>
+                                    {% endif %}
+                                </select>
+                                <button type="submit" class="approve-btn">Approve</button>
+                            </form>
+                        </div>
+                        <button id="rejectBtn" class="reject-btn" data-user-id="${userId}">Reject</button>
+                        
+                        <div id="rejectReasonContainer" class="reason-container">
+                            <form method="post" action="/reject-user/${userId}/" id="rejectForm">
+                                {% csrf_token %}
+                                <textarea name="rejection_reason" class="reason-textarea" placeholder="Please provide a reason for rejection (optional)"></textarea>
+                                <button type="submit" class="reject-btn">Confirm Rejection</button>
+                            </form>
+                        </div>
+                    `;
+                    
+                    // Add event listener for reject button
+                    document.getElementById('rejectBtn').addEventListener('click', function() {
+                        const reasonContainer = document.getElementById('rejectReasonContainer');
+                        reasonContainer.style.display = 'block';
+                        this.style.display = 'none';
+                    });
+                })
+                .catch(error => {
+                    contentDiv.innerHTML = '<p>Error loading member details. Please try again later.</p>';
+                });
+        });
+    });
+    
+    // Close modal when clicking the close button
+    const closeButton = document.querySelector('.modal .close');
+    if (closeButton) {
+        closeButton.addEventListener('click', closeModal);
+    }
+    
+    // Close modal when clicking outside of it
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Make notification messages disappear after 5 seconds
     const alerts = document.querySelectorAll('.alert');
     if (alerts.length > 0) {
         setTimeout(function() {

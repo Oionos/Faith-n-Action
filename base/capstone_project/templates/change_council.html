@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+Knights of Columbus - Change Council
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}?v={% now 'U' %}">
+
+<div class="dashboard-container">
+    <div class="content-card">
+        <div class="dashboard-header">
+            <h1>Change Council Assignment</h1>
+            <div>
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'member_list' %}" class="dashboard-btn secondary back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Member List
+                </a>
+                {% else %}
+                <a href="{% url 'council_members' %}" class="dashboard-btn secondary back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Council Members
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="user-info-card">
+            <div class="user-header">
+                <div class="user-avatar">
+                    {% if user_to_change.profile_picture %}
+                        <img src="{{ user_to_change.profile_picture.url }}" alt="Profile Picture">
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div class="user-details">
+                    <h2>{{ user_to_change.first_name }} {{ user_to_change.last_name }}</h2>
+                    <p class="role-badge role-{{ user_to_change.role }}">{{ user_to_change.get_role_display }}</p>
+                    <p>Current Council: <strong>{{ user_to_change.council.name }}</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form method="post" class="styled-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="council">Select New Council:</label>
+                    <select id="council" name="council" class="styled-select" required>
+                        <option value="" disabled selected>Choose a council</option>
+                        {% for council in councils %}
+                            <option value="{{ council.id }}" {% if council == user_to_change.council %}selected{% endif %}>
+                                {{ council.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="dashboard-btn">Change Council</button>
+                    {% if request.user.role == 'admin' %}
+                    <a href="{% url 'member_list' %}" class="dashboard-btn secondary">Cancel</a>
+                    {% else %}
+                    <a href="{% url 'council_members' %}" class="dashboard-btn secondary">Cancel</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .messages-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .message {
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 0.5rem;
+    }
+    
+    .message.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .user-info-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .user-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .user-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+    
+    .user-avatar i {
+        font-size: 2.5rem;
+        color: #0D3471;
+    }
+    
+    .user-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .user-details h2 {
+        margin: 0 0 0.5rem 0;
+        color: var(--heading-color);
+    }
+    
+    .form-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    .styled-form {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--heading-color);
+    }
+    
+    .styled-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(13, 52, 113, 0.2);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        background-color: white;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-start;
+    }
+    
+    @media (max-width: 768px) {
+        .user-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .form-actions {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %} 

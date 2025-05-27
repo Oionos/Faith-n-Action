@@ -354,6 +354,36 @@ body {
     color: #212529;
 }
 
+/* Degree badges */
+.degree-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.degree-1st {
+    background-color: #28a745;
+    color: white;
+}
+
+.degree-2nd {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.degree-3rd {
+    background-color: #6f42c1;
+    color: white;
+}
+
+.degree-4th {
+    background-color: #dc3545;
+    color: white;
+}
+
 /* User details common styling */
 .user-header {
     display: flex;

@@ -82,7 +82,7 @@
         
         <div class="message-input">
             <div class="image-upload">
-                <label for="imageUpload">
+                <label for="imageUpload" title="Upload image (Max: 10MB)">
                     <i class="fas fa-image"></i>
                 </label>
                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
@@ -93,6 +93,7 @@
             </button>
         </div>
         <div id="selectedImagePreview" class="image-preview"></div>
+        <div id="imageError" class="image-error" style="display: none;">File size exceeds 10MB limit. Please choose a smaller image.</div>
     </div>
 </div>
 
@@ -972,6 +973,23 @@
     margin: 20px auto;
     max-width: 80%;
 }
+
+.image-error {
+    background-color: rgba(255, 68, 68, 0.9);
+    color: white;
+    padding: 10px;
+    margin: 0 20px;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 10px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 <script>
@@ -986,10 +1004,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchButton = document.getElementById('clearSearchButton');
     const imageUpload = document.getElementById('imageUpload');
     const selectedImagePreview = document.getElementById('selectedImagePreview');
+    const imageError = document.getElementById('imageError');
     const pinnedMessagesListContainer = document.getElementById('pinnedMessagesListContainer');
     const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
     const forumSidebar = document.querySelector('.forum-sidebar');
     const mobileOverlay = document.querySelector('.mobile-overlay');
+    
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
     
     // Handle mobile sidebar toggle
     mobileNavToggle.addEventListener('click', function(e) {
@@ -1260,6 +1281,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = messageInput.value.trim();
         if ((!content && !selectedImage) || isSending) return;
         
+        // Double-check file size before sending
+        if (selectedImage && selectedImage.size > MAX_FILE_SIZE) {
+            imageError.style.display = 'block';
+            setTimeout(() => {
+                imageError.style.display = 'none';
+            }, 5000);
+            clearSelectedImage();
+            return;
+        }
+        
         isSending = true;
         sendButton.disabled = true;
         
@@ -1286,6 +1317,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 clearSelectedImage();
                 isNearBottom = true; // Force scroll to bottom after sending
                 loadMessages(currentCategory, true);
+            } else if (data.status === 'error' && data.message) {
+                // Display server-side error if any
+                imageError.textContent = data.message;
+                imageError.style.display = 'block';
+                setTimeout(() => {
+                    imageError.style.display = 'none';
+                }, 5000);
             }
         })
         .finally(() => {
@@ -1440,8 +1478,22 @@ document.addEventListener('DOMContentLoaded', function() {
     imageUpload.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
+            // Check file size
+            if (file.size > MAX_FILE_SIZE) {
+                imageError.style.display = 'block';
+                imageUpload.value = ''; // Clear the input
+                selectedImage = null;
+                
+                // Hide error message after 5 seconds
+                setTimeout(() => {
+                    imageError.style.display = 'none';
+                }, 5000);
+                return;
+            }
+            
             selectedImage = file;
             displaySelectedImage(file);
+            imageError.style.display = 'none';
         }
     });
     

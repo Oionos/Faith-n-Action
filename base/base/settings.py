@@ -46,6 +46,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'capstone_project.middleware.EnsureNotAuthenticatedMiddleware',
+    'capstone_project.middleware.SessionRefreshMiddleware',
 ]
 
 ROOT_URLCONF = 'base.urls'
@@ -156,7 +157,7 @@ PAYMONGO_SECRET_KEY = config('PAYMONGO_SECRET_KEY', default='')  # Rename and ad
 
 # Security settings for production
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-SESSION_COOKIE_AGE = 1200  # 20 minutes
+SESSION_COOKIE_AGE = 28800  # 8 hours (was 20 minutes)
 SECURE_SSL_REDIRECT = False  # Set to True in production
 SESSION_COOKIE_SECURE = False  # Set to True in production
 CSRF_COOKIE_SECURE = False  # Set to True in production
@@ -165,3 +166,12 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Email settings for SendGrid
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'apikey'  # Literal string 'apikey'
+EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
+DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')

@@ -16,7 +16,7 @@ Knights of Columbus - Sign Up
         {% if success %}
             <p class="message success-message">{{ success }}</p>
         {% endif %}
-        <form method="post" id="signupForm" onsubmit="return validateForm()">
+        <form method="post" id="signupForm" enctype="multipart/form-data" onsubmit="return validateForm()">
             {% csrf_token %}
             <div class="form-group-row">
                 <div class="form-group">
@@ -91,33 +91,49 @@ Knights of Columbus - Sign Up
                 <span class="warning" id="birthday_warning"></span>
             </div>
             <div class="form-group">
-                <label for="gender">Gender:</label>
-                <select id="gender" name="gender" required>
-                    <option value="" disabled selected>Select your gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Non-Binary">Non-Binary</option>
-                    <option value="Other">Other</option>
-                    <option value="Prefer Not to Say">Prefer Not to Say</option>
-                </select>
-                <span class="warning" id="gender_warning"></span>
+                <label>Are you a practical Catholic?</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="practical_catholic" value="Yes" required>
+                        Yes
+                    </label>
+                    <label>
+                        <input type="radio" name="practical_catholic" value="No">
+                        No
+                    </label>
+                </div>
+                <span class="warning" id="practical_catholic_warning"></span>
             </div>
             <div class="form-group">
-                <label for="religion">Religion:</label>
-                <select id="religion" name="religion" required>
-                    <option value="" disabled selected>Select your religion</option>
-                    <option value="Catholic">Catholic</option>
-                    <option value="Protestant">Protestant</option>
-                    <option value="Orthodox">Orthodox</option>
-                    <option value="Islam">Islam</option>
-                    <option value="Hinduism">Hinduism</option>
-                    <option value="Buddhism">Buddhism</option>
-                    <option value="Judaism">Judaism</option>
-                    <option value="Sikhism">Sikhism</option>
-                    <option value="Other">Other</option>
-                    <option value="None">None</option>
-                </select>
-                <span class="warning" id="religion_warning"></span>
+                <label>Marital Status:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="marital_status" value="Single" required>
+                        Single
+                    </label>
+                    <label>
+                        <input type="radio" name="marital_status" value="Married">
+                        Married
+                    </label>
+                    <label>
+                        <input type="radio" name="marital_status" value="Widowed">
+                        Widowed
+                    </label>
+                    <label>
+                        <input type="radio" name="marital_status" value="Divorced">
+                        Divorced
+                    </label>
+                    <label>
+                        <input type="radio" name="marital_status" value="Separated">
+                        Separated
+                    </label>
+                </div>
+                <span class="warning" id="marital_status_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="occupation">Occupation:</label>
+                <input type="text" id="occupation" name="occupation" placeholder="Enter your occupation" required>
+                <span class="warning" id="occupation_warning"></span>
             </div>
             <div class="form-group">
                 <label for="street">Street:</label>
@@ -126,28 +142,72 @@ Knights of Columbus - Sign Up
                 <span class="warning" id="street_warning"></span>
             </div>
             <div class="form-group">
-                <label for="barangay">Barangay:</label>
-                <input type="text" id="barangay" name="barangay" placeholder="Enter your barangay" required
-                       pattern="[A-Z][a-z]*( [A-Z][a-z]*)*" oninput="validatePlace(this)">
-                <span class="warning" id="barangay_warning"></span>
+                <label for="province">Province:</label>
+                <select id="province" name="province" required class="styled-select" onchange="loadCities()">
+                    <option value="" disabled selected>Select a province</option>
+                    <option value="Batangas">Batangas</option>
+                    <option value="Cavite">Cavite</option>
+                    <option value="Laguna">Laguna</option>
+                    <option value="Quezon">Quezon</option>
+                    <option value="Rizal">Rizal</option>
+                </select>
+                <span class="warning" id="province_warning"></span>
             </div>
             <div class="form-group">
                 <label for="city">City/Municipality:</label>
-                <input type="text" id="city" name="city" placeholder="Enter your city/municipality" required
-                       pattern="[A-Z][a-z]*( [A-Z][a-z]*)*" oninput="validatePlace(this)">
+                <select id="city" name="city" required class="styled-select" onchange="loadBarangays(); updateZipCode();" disabled>
+                    <option value="" disabled selected>Select a city/municipality</option>
+                </select>
                 <span class="warning" id="city_warning"></span>
             </div>
             <div class="form-group">
-                <label for="province">Province:</label>
-                <input type="text" id="province" name="province" placeholder="Enter your province" required
-                       pattern="[A-Z][a-z]*( [A-Z][a-z]*)*" oninput="validatePlace(this)">
-                <span class="warning" id="province_warning"></span>
+                <label for="barangay">Barangay:</label>
+                <select id="barangay" name="barangay" required class="styled-select" disabled>
+                    <option value="" disabled selected>Select a barangay</option>
+                </select>
+                <span class="warning" id="barangay_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="zip_code">ZIP Code:</label>
+                <input type="text" id="zip_code" name="zip_code" readonly>
+                <span class="warning" id="zip_code_warning"></span>
             </div>
             <div class="form-group">
                 <label for="contact_number">Contact Number:</label>
                 <input type="tel" id="contact_number" name="contact_number" placeholder="Enter your contact number"
                        maxlength="15" pattern="[0-9]+" oninput="validateContactNumber(this)">
                 <span class="warning" id="contact_number_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="recruiter_name">Recruiter's Name:</label>
+                <div class="recruiter-container">
+                    <input type="text" id="recruiter_name" name="recruiter_name" placeholder="Enter the name of who recruited you" 
+                           autocomplete="off" oninput="searchMembers(this.value)">
+                    <div id="recruiter_suggestions" class="suggestions-dropdown"></div>
+                </div>
+                <div class="checkbox-option">
+                    <label>
+                        <input type="checkbox" id="voluntary_join" name="voluntary_join" onchange="handleVoluntaryJoin()">
+                        I am joining voluntarily (no recruiter)
+                    </label>
+                </div>
+                <span class="warning" id="recruiter_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="e_signature">E-Signature Upload:</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="e_signature" name="e_signature" accept="image/*" 
+                           onchange="displayFileName(this)" required>
+                    <label for="e_signature" class="file-upload-label">
+                        <span id="file-name">Choose a file</span>
+                        <span class="browse-btn">Browse</span>
+                    </label>
+                </div>
+                <small class="file-info">Maximum file size: 10MB. Accepted formats: JPG, PNG, GIF.</small>
+                <span class="warning" id="e_signature_warning"></span>
+                <div id="preview-container" class="preview-container" style="display: none;">
+                    <img id="signature-preview" src="" alt="Signature Preview">
+                </div>
             </div>
             <div class="form-group">
                 <label for="council">Select Your Council:</label>
@@ -160,11 +220,26 @@ Knights of Columbus - Sign Up
                 <span class="warning" id="council_warning"></span>
             </div>
             <div class="form-group">
+                <label for="join_reason">Why do you want to join Knights of Columbus?</label>
+                <textarea id="join_reason" name="join_reason" rows="4" placeholder="Please share your reasons for joining..." required></textarea>
+                <span class="warning" id="join_reason_warning"></span>
+            </div>
+            <div class="form-group">
+                <label>Data Privacy Agreement:</label>
+                <p class="privacy-text">
+                    Through this form, your data will be collected. This information will be used solely to enable the Knights of Columbus to gather statistics on Membership Record. It will be utilized within our Organization and will not be shared with any outside parties. We value your rights as data subjects under the Data Privacy Act.
+                </p>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="privacy_agreement" value="agree" required>
+                        I agree
+                    </label>
                 <label>
-                    <input type="checkbox" id="eligibility" name="eligibility">
-                    I hereby understand that I am 18 or above, Male, and a Religious Catholic.
+                        <input type="radio" name="privacy_agreement" value="disagree">
+                        I disagree
                 </label>
-                <span class="warning" id="eligibility_warning"></span>
+                </div>
+                <span class="warning" id="privacy_agreement_warning"></span>
             </div>
             <button type="submit" class="styled-button">Create Account</button>
         </form>
@@ -227,8 +302,25 @@ Knights of Columbus - Sign Up
             warning.textContent = 'Username must be at least 3 characters long.';
             return false;
         } else {
-            warning.textContent = '';
-            return true;
+            // Check if username already exists
+            const username = input.value;
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `/check-username/?username=${encodeURIComponent(username)}`, false); // Synchronous request
+            xhr.send();
+            
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.exists) {
+                    warning.textContent = 'This username is already taken.';
+                    return false;
+                } else {
+                    warning.textContent = '';
+                    return true;
+                }
+            } else {
+                warning.textContent = '';
+                return true;
+            }
         }
     }
 
@@ -242,23 +334,53 @@ Knights of Columbus - Sign Up
             warning.textContent = 'Please enter a valid email address (e.g., user@domain.com).';
             return false;
         } else {
-            warning.textContent = '';
-            return true;
+            // Check if email already exists
+            const email = input.value;
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `/check-email/?email=${encodeURIComponent(email)}`, false); // Synchronous request
+            xhr.send();
+            
+            if (xhr.status === 200) {
+                const response = JSON.parse(xhr.responseText);
+                if (response.exists) {
+                    warning.textContent = 'This email address is already registered.';
+                    return false;
+                } else {
+                    warning.textContent = '';
+                    return true;
+                }
+            } else {
+                warning.textContent = '';
+                return true;
+            }
         }
     }
 
     function validatePlace(input) {
         const warning = document.getElementById(input.id + '_warning');
-        const regex = /^[A-Z][a-z]*( [A-Z][a-z]*)*$/;
-        if (!input.value) {
-            warning.textContent = 'This field is required.';
-            return false;
-        } else if (!regex.test(input.value)) {
-            warning.textContent = 'Must start with a capital letter, letters only, no numbers. Use spaces for multiple words.';
-            return false;
+        
+        if (input.tagName === 'SELECT') {
+            // For dropdown fields, we just need to check if it's required and has a value
+            if (input.required && !input.value) {
+                warning.textContent = 'Please select an option.';
+                return false;
+            } else {
+                warning.textContent = '';
+                return true;
+            }
         } else {
-            warning.textContent = '';
-            return true;
+            // For text inputs, check the pattern
+            const regex = /^[A-Z][a-z]*( [A-Z][a-z]*)*$/;
+            if (!input.value) {
+                warning.textContent = 'This field is required.';
+                return false;
+            } else if (!regex.test(input.value)) {
+                warning.textContent = 'Must start with a capital letter, letters only, no numbers. Use spaces for multiple words.';
+                return false;
+            } else {
+                warning.textContent = '';
+                return true;
+            }
         }
     }
 
@@ -278,14 +400,25 @@ Knights of Columbus - Sign Up
         }
     }
 
-    function validateGender() {
-        const input = document.getElementById('gender');
-        const warning = document.getElementById('gender_warning');
-        if (!input.value) {
-            warning.textContent = 'Please select your gender.';
+    function validatePracticalCatholic() {
+        const inputs = document.getElementsByName('practical_catholic');
+        const warning = document.getElementById('practical_catholic_warning');
+        let selected = false;
+        let isYes = false;
+        
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].checked) {
+                selected = true;
+                isYes = inputs[i].value === 'Yes';
+                break;
+            }
+        }
+        
+        if (!selected) {
+            warning.textContent = 'Please select an option.';
             return false;
-        } else if (input.value !== 'Male') {
-            warning.textContent = 'Only Male gender is allowed for Knights of Columbus membership.';
+        } else if (!isYes) {
+            warning.textContent = 'You must be a practical Catholic to join Knights of Columbus.';
             return false;
         } else {
             warning.textContent = '';
@@ -293,14 +426,20 @@ Knights of Columbus - Sign Up
         }
     }
 
-    function validateReligion() {
-        const input = document.getElementById('religion');
-        const warning = document.getElementById('religion_warning');
-        if (!input.value) {
-            warning.textContent = 'Please select your religion.';
-            return false;
-        } else if (input.value !== 'Catholic') {
-            warning.textContent = 'Only Catholic religion is allowed for Knights of Columbus membership.';
+    function validateMaritalStatus() {
+        const inputs = document.getElementsByName('marital_status');
+        const warning = document.getElementById('marital_status_warning');
+        let selected = false;
+        
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].checked) {
+                selected = true;
+                break;
+            }
+        }
+        
+        if (!selected) {
+            warning.textContent = 'Please select your marital status.';
             return false;
         } else {
             warning.textContent = '';
@@ -308,11 +447,68 @@ Knights of Columbus - Sign Up
         }
     }
 
-    function validateEligibility() {
-        const input = document.getElementById('eligibility');
-        const warning = document.getElementById('eligibility_warning');
-        if (!input.checked) {
-            warning.textContent = 'You must confirm that you are 18 or above, Male, and a Religious Catholic.';
+    function validateOccupation() {
+        const input = document.getElementById('occupation');
+        const warning = document.getElementById('occupation_warning');
+        
+        if (!input.value.trim()) {
+            warning.textContent = 'Occupation is required.';
+            return false;
+        } else {
+            warning.textContent = '';
+            return true;
+        }
+    }
+
+    function validateRecruiter() {
+        const recruiterInput = document.getElementById('recruiter_name');
+        const voluntaryCheckbox = document.getElementById('voluntary_join');
+        const warning = document.getElementById('recruiter_warning');
+        
+        if (!voluntaryCheckbox.checked && !recruiterInput.value.trim()) {
+            warning.textContent = 'Please enter a recruiter name or check the voluntary join option.';
+            return false;
+        } else {
+            warning.textContent = '';
+            return true;
+        }
+    }
+
+    function validatePrivacyAgreement() {
+        const inputs = document.getElementsByName('privacy_agreement');
+        const warning = document.getElementById('privacy_agreement_warning');
+        let selected = false;
+        let isAgree = false;
+        
+        for (let i = 0; i < inputs.length; i++) {
+            if (inputs[i].checked) {
+                selected = true;
+                isAgree = inputs[i].value === 'agree';
+                break;
+            }
+        }
+        
+        if (!selected) {
+            warning.textContent = 'Please select an option for the data privacy agreement.';
+            return false;
+        } else if (!isAgree) {
+            warning.textContent = 'You must agree to the data privacy agreement to create an account.';
+            return false;
+        } else {
+            warning.textContent = '';
+            return true;
+        }
+    }
+
+    function validateJoinReason() {
+        const input = document.getElementById('join_reason');
+        const warning = document.getElementById('join_reason_warning');
+        
+        if (!input.value.trim()) {
+            warning.textContent = 'Please tell us why you want to join Knights of Columbus.';
+            return false;
+        } else if (input.value.trim().length < 10) {
+            warning.textContent = 'Please provide a more detailed reason for joining.';
             return false;
         } else {
             warning.textContent = '';
@@ -334,35 +530,164 @@ Knights of Columbus - Sign Up
         const hasUpper = /[A-Z]/.test(value);
         const hasLower = /[a-z]/.test(value);
         const hasNumber = /[0-9]/.test(value);
-        const hasSpecial = /[_=()'",!@#$%^&*,.?":{}|<> ]/.test(value);
+        const hasSpecial = /[_=()'",!@#$%^&*,.?":{}|<>]/.test(value);
         const typesCount = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
         const length = value.length;
 
-        if (length < 8 || typesCount === 0) {
+        // Calculate strength score (0-100)
+        let score = 0;
+        
+        // Length contributes up to 40 points
+        score += Math.min(40, length * 2);
+        
+        // Character type variety contributes up to 40 points
+        score += typesCount * 10;
+        
+        // Extra points for longer passwords with good variety
+        if (length >= 12 && typesCount >= 3) {
+            score += 10;
+        }
+        if (length >= 16 && typesCount >= 3) {
+            score += 10;
+        }
+        
+        // Cap at 100
+        score = Math.min(100, score);
+        
+        // Set strength bar width based on score
+        strengthBar.style.width = `${score}%`;
+        
+        if (length < 8) {
             strengthIndicator.classList.add('strength-weak');
             strengthText.textContent = 'Weak';
-            warning.textContent = 'Password must be at least 8 characters with a mix of letters, numbers, or symbols.';
+            warning.textContent = 'Password must be at least 8 characters.';
             return false;
-        } else if (length >= 8 && typesCount >= 2 && length < 12) {
+        } else if (score < 50) {
+            strengthIndicator.classList.add('strength-weak');
+            strengthText.textContent = 'Weak';
+            warning.textContent = 'Weak password. Add uppercase letters, numbers, and symbols.';
+            return false;
+        } else if (score < 75) {
             strengthIndicator.classList.add('strength-medium');
             strengthText.textContent = 'Medium';
-            warning.textContent = 'Password is medium. Aim for 12+ characters with all types for strong.';
+            warning.textContent = 'Medium strength password. Add more character types for stronger security.';
             return true; // Allow Medium passwords
-        } else if (length >= 12 && typesCount >= 4) {
+        } else {
             strengthIndicator.classList.add('strength-strong');
             strengthText.textContent = 'Strong';
             warning.textContent = '';
             return true;
+        }
+    }
+
+    // Handle recruiter field and voluntary join checkbox
+    function handleVoluntaryJoin() {
+        const recruiterInput = document.getElementById('recruiter_name');
+        const voluntaryCheckbox = document.getElementById('voluntary_join');
+        
+        if (voluntaryCheckbox.checked) {
+            recruiterInput.value = '';
+            recruiterInput.disabled = true;
+            document.getElementById('recruiter_suggestions').style.display = 'none';
         } else {
-            strengthIndicator.classList.add('strength-weak');
-            strengthText.textContent = 'Weak';
-            warning.textContent = 'Password lacks complexity. Use 12+ characters with uppercase, lowercase, numbers, and symbols.';
+            recruiterInput.disabled = false;
+        }
+    }
+
+    // Add file size validation function
+    function validateFileSize(input) {
+        const warning = document.getElementById('e_signature_warning');
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        
+        // Clear previous warnings
+        warning.textContent = '';
+        
+        if (input.files && input.files[0]) {
+            const fileSize = input.files[0].size;
+            if (fileSize > maxSize) {
+                warning.textContent = 'File size exceeds 10MB limit. Please select a smaller file.';
+                input.value = ''; // Clear the input
+                
+                // Reset the display
+                const fileNameSpan = document.getElementById('file-name');
+                if (fileNameSpan) fileNameSpan.textContent = 'Choose a file';
+                
+                const previewContainer = document.getElementById('preview-container');
+                if (previewContainer) previewContainer.style.display = 'none';
+                
+                return false;
+            } else {
+                return true;
+            }
+        }
+        
+        // If we're validating during form submission and no file is selected
+        if (input.required && (!input.files || input.files.length === 0)) {
+            warning.textContent = 'Please upload your e-signature.';
             return false;
         }
+        
+        return true;
+    }
+
+    // Update searchMembers function to include council name
+    function searchMembers(query) {
+        if (!query || query.length < 2) {
+            document.getElementById('recruiter_suggestions').innerHTML = '';
+            document.getElementById('recruiter_suggestions').style.display = 'none';
+            return;
+        }
+        
+        // Make an AJAX call to search for members
+        fetch(`/search-members?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const suggestionsDiv = document.getElementById('recruiter_suggestions');
+                suggestionsDiv.innerHTML = '';
+                
+                if (data.members && data.members.length > 0) {
+                    data.members.forEach(member => {
+                        const suggestion = document.createElement('div');
+                        suggestion.className = 'suggestion-item';
+                        
+                        // Create name span with blue color
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'suggestion-name';
+                        nameSpan.textContent = `${member.full_name}`;
+                        
+                        // Create council span
+                        const councilSpan = document.createElement('span');
+                        councilSpan.className = 'suggestion-council';
+                        councilSpan.textContent = member.council_name ? ` - ${member.council_name}` : '';
+                        
+                        // Append both spans to suggestion div
+                        suggestion.appendChild(nameSpan);
+                        suggestion.appendChild(councilSpan);
+                        
+                        suggestion.onclick = function() {
+                            document.getElementById('recruiter_name').value = member.full_name;
+                            suggestionsDiv.style.display = 'none';
+                        };
+                        suggestionsDiv.appendChild(suggestion);
+                    });
+                    suggestionsDiv.style.display = 'block';
+                } else {
+                    suggestionsDiv.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error searching members:', error);
+            });
     }
 
     function validateForm() {
         let hasErrors = false;
+        
+        // Clear any previous form-level error message
+        const errorMessageElement = document.querySelector('.error-message');
+        if (errorMessageElement) {
+            errorMessageElement.style.display = 'none';
+        }
 
         // Validate all fields and track errors
         const firstNameValid = validateName(document.getElementById('first_name'));
@@ -372,14 +697,18 @@ Knights of Columbus - Sign Up
         const usernameValid = validateUsername(document.getElementById('username'));
         const emailValid = validateEmail(document.getElementById('email'));
         const streetValid = validatePlace(document.getElementById('street'));
-        const barangayValid = validatePlace(document.getElementById('barangay'));
-        const cityValid = validatePlace(document.getElementById('city'));
-        const provinceValid = validatePlace(document.getElementById('province'));
+        const provinceValid = document.getElementById('province').value !== '';
+        const cityValid = document.getElementById('city').value !== '';
+        const barangayValid = document.getElementById('barangay').value !== '';
         const contactNumberValid = validateContactNumber(document.getElementById('contact_number'));
         const passwordValid = validatePassword(document.getElementById('password'));
-        const genderValid = validateGender();
-        const religionValid = validateReligion();
-        const eligibilityValid = validateEligibility();
+        const practicalCatholicValid = validatePracticalCatholic();
+        const maritalStatusValid = validateMaritalStatus();
+        const occupationValid = validateOccupation();
+        const recruiterValid = validateRecruiter();
+        const privacyAgreementValid = validatePrivacyAgreement();
+        const joinReasonValid = validateJoinReason();
+        const eSignatureValid = validateESignature();
 
         // Password match check
         const password = document.getElementById('password').value;
@@ -422,16 +751,614 @@ Knights of Columbus - Sign Up
         }
 
         // Check if any validations failed
-        if (!firstNameValid || !secondNameValid || !middleNameValid || !lastNameValid || !usernameValid || !emailValid || !streetValid || !barangayValid || !cityValid || !provinceValid || !contactNumberValid || !passwordValid || !genderValid || !religionValid || !eligibilityValid) {
+        if (!firstNameValid || !secondNameValid || !middleNameValid || !lastNameValid || 
+            !usernameValid || !emailValid || !streetValid || !barangayValid || 
+            !cityValid || !provinceValid || !contactNumberValid || !passwordValid || 
+            !practicalCatholicValid || !maritalStatusValid || !occupationValid || 
+            !recruiterValid || !privacyAgreementValid || !joinReasonValid || !eSignatureValid) {
             hasErrors = true;
+        }
+
+        // Scroll to first error if any
+        if (hasErrors) {
+            const firstError = document.querySelector('.warning:not(:empty)');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         return !hasErrors;
     }
 
-    // Add event listeners
-    document.getElementById('gender').addEventListener('change', validateGender);
-    document.getElementById('religion').addEventListener('change', validateReligion);
-    document.getElementById('eligibility').addEventListener('change', validateEligibility);
+    function validateESignature() {
+        const input = document.getElementById('e_signature');
+        const warning = document.getElementById('e_signature_warning');
+        
+        // Clear previous warnings
+        warning.textContent = '';
+        
+        if (!input.files || input.files.length === 0) {
+            warning.textContent = 'Please upload your e-signature.';
+            return false;
+        }
+        
+        // Check file type
+        const file = input.files[0];
+        const fileType = file.type;
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+        
+        if (!validTypes.includes(fileType)) {
+            warning.textContent = 'Please upload a valid image file (JPG, PNG, or GIF).';
+            return false;
+        }
+        
+        // Check file size
+        const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+        if (file.size > maxSize) {
+            warning.textContent = 'File size exceeds 10MB limit. Please select a smaller file.';
+            return false;
+        }
+        
+        return true;
+    }
+
+    function displayFileName(input) {
+        const fileNameSpan = document.getElementById('file-name');
+        const previewContainer = document.getElementById('preview-container');
+        const signaturePreview = document.getElementById('signature-preview');
+        const warning = document.getElementById('e_signature_warning');
+        
+        // Clear previous warnings
+        warning.textContent = '';
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const fileName = file.name;
+            fileNameSpan.textContent = fileName;
+            
+            // Check file type
+            const fileType = file.type;
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            
+            if (!validTypes.includes(fileType)) {
+                warning.textContent = 'Please upload a valid image file (JPG, PNG, or GIF).';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Check file size
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                warning.textContent = 'File size exceeds 10MB limit. Please select a smaller file.';
+                previewContainer.style.display = 'none';
+                return;
+            }
+            
+            // Show file preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                signaturePreview.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            fileNameSpan.textContent = 'Choose a file';
+            previewContainer.style.display = 'none';
+        }
+    }
+
+    // Update the form submission handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('signupForm');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                // Prevent default form submission
+                event.preventDefault();
+                
+                // Run our validation
+                if (validateForm()) {
+                    // If validation passes, submit the form
+                    this.submit();
+                }
+            });
+            
+            // Add event listeners for validation
+            document.querySelectorAll('input[name="practical_catholic"]').forEach(input => {
+                input.addEventListener('change', validatePracticalCatholic);
+            });
+            
+            document.querySelectorAll('input[name="marital_status"]').forEach(input => {
+                input.addEventListener('change', validateMaritalStatus);
+            });
+            
+            document.getElementById('occupation').addEventListener('input', validateOccupation);
+            
+            document.getElementById('recruiter_name').addEventListener('blur', validateRecruiter);
+            document.getElementById('voluntary_join').addEventListener('change', validateRecruiter);
+            
+            document.querySelectorAll('input[name="privacy_agreement"]').forEach(input => {
+                input.addEventListener('change', validatePrivacyAgreement);
+            });
+            
+            document.getElementById('join_reason').addEventListener('input', validateJoinReason);
+            
+            // Initialize the voluntary join handler
+            handleVoluntaryJoin();
+            
+            // Close suggestions dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.recruiter-container')) {
+                    document.getElementById('recruiter_suggestions').style.display = 'none';
+                }
+            });
+        }
+    });
+
+    // CALABARZON Location Data
+    const locationData = {
+        "Batangas": {
+            "Batangas City": {
+                "zip": "4200",
+                "barangays": ["Alangilan", "Balagtas", "Balete", "Banaba Center", "Banaba East", "Banaba West", "Barangay 1", "Barangay 2", "Barangay 3", "Barangay 4", "Barangay 5", "Barangay 6", "Barangay 7", "Barangay 8", "Barangay 9", "Barangay 10", "Barangay 11", "Barangay 12", "Barangay 13", "Barangay 14", "Barangay 15", "Barangay 16", "Barangay 17", "Barangay 18", "Barangay 19", "Barangay 20", "Barangay 21", "Barangay 22", "Barangay 23", "Barangay 24", "Bilogo", "Bolbok", "Bukal", "Calicanto", "Concepcion", "Conde Itaas", "Conde Labac", "Cuta", "Dalig", "Dela Paz", "Dela Paz Pulot Aplaya", "Dela Paz Pulot Itaas", "Dumantay", "Dumuclay", "Gulod Itaas", "Gulod Labac", "Haligue Kanluran", "Haligue Silangan", "Ilijan", "Kumintang Ibaba", "Kumintang Ilaya", "Libjo", "Liponpon", "Maapas", "Mahabang Dahilig", "Mahabang Parang", "Mahacot Silangan", "Mahacot Kanluran", "Malibayo", "Malitam", "Maruclap", "Mabacong", "Pagkilatan", "Paharang Kanluran", "Paharang Silangan", "Pallocan Kanluran", "Pallocan Silangan", "Pinamucan", "Pinamucan Ibaba", "Pinamucan Silangan", "Sampaga", "San Agapito", "San Agustin", "San Andres", "San Isidro", "San Jose", "San Pedro", "Santa Clara", "Santa Rita Aplaya", "Santa Rita Karsada", "Santo Domingo", "Santo Niño", "Simlong", "Sirang Lupa", "Sorosoro Ibaba", "Sorosoro Ilaya", "Sorosoro Karsada", "Tabangao Aplaya", "Tabangao Ambulong", "Tabangao Dao", "Talahib Pandayan", "Talahib Payapa", "Talumpok Kanluran", "Talumpok Silangan", "Tinga Itaas", "Tinga Labac", "Tulo"]
+            },
+            "Lipa City": {
+                "zip": "4217",
+                "barangays": ["Adya", "Anilao", "Anilao-Labac", "Antipolo Del Norte", "Antipolo Del Sur", "Bagong Pook", "Balele", "Balintawak", "Banay-banay", "Bolbok", "Bugtong na Pulo", "Bulacnin", "Bulaklakan", "Calamias", "Cumba", "Dagatan", "Duhatan", "Halang", "Inosloban", "Kayumanggi", "Labac", "Latag", "Lodlod", "Lumbang", "Mabini", "Malagonlong", "Malitlit", "Marauoy", "Mataas Na Lupa", "Munting Pulo", "Pagolingin Bata", "Pagolingin East", "Pagolingin West", "Pangao", "Pinagkawitan", "Pinagtongulan", "Plaridel", "Poblacion Barangay 1", "Poblacion Barangay 2", "Poblacion Barangay 3", "Poblacion Barangay 4", "Poblacion Barangay 5", "Poblacion Barangay 6", "Poblacion Barangay 7", "Poblacion Barangay 8", "Poblacion Barangay 9", "Poblacion Barangay 9-A", "Poblacion Barangay 10", "Poblacion Barangay 11", "Poblacion Barangay 12", "Pusil", "Quezon", "Rizal", "Sabang", "Sampaguita", "San Benito", "San Carlos", "San Celestino", "San Francisco", "San Guillermo", "San Jose", "San Lucas", "San Salvador", "San Sebastian", "Santo Niño", "Santo Toribio", "Sapac", "Sico", "Talisay", "Tambo", "Tangob", "Tanguay", "Tibig", "Tipacan"]
+            },
+            "Tanauan City": {
+                "zip": "4232",
+                "barangays": ["Altura Bata", "Altura Matanda", "Altura-South", "Ambulong", "Bagbag", "Bagumbayan", "Balele", "Banjo East", "Banjo Laurel", "Banjo West", "Barangay 1", "Barangay 2", "Barangay 3", "Barangay 4", "Barangay 5", "Barangay 6", "Barangay 7", "Bilog-Bilog", "Boot", "Cale", "Darasa", "Gonzales", "Janopol", "Janopol Oriental", "Laurel", "Luyos", "Mabini", "Malaking Pulo", "Maria Paz", "Maugat", "Montaña", "Natatas", "Pagaspas", "Pantay Bata", "Pantay Matanda", "Poblacion Barangay 1", "Poblacion Barangay 2", "Poblacion Barangay 3", "Poblacion Barangay 4", "Poblacion Barangay 5", "Poblacion Barangay 6", "Poblacion Barangay 7", "Sala", "Sambat", "San Jose", "Santol", "Santor", "Sulpoc", "Suplang", "Talaga", "Tinurik", "Trapiche", "Ulango", "Wawa"]
+            }
+        },
+        "Cavite": {
+            "Bacoor": {
+                "zip": "4102",
+                "barangays": ["Alima", "Aniban I", "Aniban II", "Aniban III", "Aniban IV", "Aniban V", "Banalo", "Bayanan", "Campo Santo", "Daang Bukid", "Digman", "Dulong Bayan", "Habay I", "Habay II", "Kaingin", "Ligas I", "Ligas II", "Ligas III", "Mabolo I", "Mabolo II", "Mabolo III", "Maliksi I", "Maliksi II", "Maliksi III", "Mambog I", "Mambog II", "Mambog III", "Mambog IV", "Mambog V", "Molino I", "Molino II", "Molino III", "Molino IV", "Molino V", "Molino VI", "Molino VII", "Niog I", "Niog II", "Niog III", "P.F. Espiritu I (Panapaan I)", "P.F. Espiritu II (Panapaan II)", "P.F. Espiritu III (Panapaan III)", "P.F. Espiritu IV (Panapaan IV)", "P.F. Espiritu V (Panapaan V)", "P.F. Espiritu VI (Panapaan VI)", "P.F. Espiritu VII (Panapaan VII)", "P.F. Espiritu VIII (Panapaan VIII)", "Queens Row Central", "Queens Row East", "Queens Row West", "Real I", "Real II", "Salinas I", "Salinas II", "Salinas III", "Salinas IV", "San Nicolas I", "San Nicolas II", "San Nicolas III", "Sineguelasan", "Talaba I", "Talaba II", "Talaba III", "Talaba IV", "Talaba V", "Talaba VI", "Talaba VII", "Tabing Dagat", "Zapote I", "Zapote II", "Zapote III", "Zapote IV", "Zapote V"]
+            },
+            "Dasmariñas": {
+                "zip": "4114",
+                "barangays": ["Burol I", "Burol II", "Burol III", "Burol Main", "Datu Esmael (Bago-A-Ingud)", "Emmanuel Bergado I (Langkaan I)", "Emmanuel Bergado II (Langkaan II)", "H-2 (Pala-Pala)", "Paliparan I", "Paliparan II", "Paliparan III", "Sabang", "Salawag", "Salitran I", "Salitran II", "Salitran III", "Salitran IV", "Sampaloc I", "Sampaloc II", "Sampaloc III", "Sampaloc IV", "San Agustin I", "San Agustin II", "San Agustin III", "San Andres I", "San Andres II", "San Esteban", "San Isidro Labrador I", "San Isidro Labrador II", "San Jose", "San Luis I", "San Luis II", "San Miguel I", "San Miguel II", "San Simon", "Santa Cristina I", "Santa Cristina II", "Santa Fe", "Victoria Reyes", "Zone I", "Zone I-A", "Zone II", "Zone III", "Zone IV", "Zone IV-A"]
+            },
+            "Tagaytay": {
+                "zip": "4120",
+                "barangays": ["Asisan", "Bagong Tubig", "Dapdap East", "Dapdap West", "Francisco", "Guinhawa South", "Iruhin East", "Iruhin South", "Iruhin West", "Kaybagal Central", "Kaybagal East", "Kaybagal North", "Kaybagal South", "Maharlika East", "Maharlika West", "Maitim II Central", "Maitim II East", "Maitim II West", "Mendez Crossing East", "Mendez Crossing West", "Neogan", "Patutong Malaki North", "Patutong Malaki South", "Sambong", "San Jose", "Silang Junction North", "Silang Junction South", "Sungay East", "Sungay West", "Tolentino East", "Tolentino West", "Zambal"]
+            }
+        },
+        "Laguna": {
+            "Calamba": {
+                "zip": "4027",
+                "barangays": ["Bagong Kalsada", "Banadero", "Banlic", "Barandal", "Batino", "Bubuyan", "Bucal", "Bunggo", "Burol", "Camaligan", "Canlubang", "Halang", "Hornalan", "Kay-Anlog", "La Mesa", "Laguerta", "Lawa", "Lecheria", "Lingga", "Looc", "Mabato", "Majada Labas", "Makiling", "Mapagong", "Masili", "Maunong", "Mayapa", "Milagrosa", "Paciano Rizal", "Palingon", "Palo-Alto", "Pansol", "Parian", "Prinza", "Punta", "Puting Lupa", "Real", "Saimsim", "Sampiruhan", "San Cristobal", "San Jose", "San Juan", "Sirang Lupa", "Sucol", "Tulo", "Turbina", "Ulango", "Uwisan", "Barangay 1", "Barangay 2", "Barangay 3", "Barangay 4", "Barangay 5", "Barangay 6", "Barangay 7"]
+            },
+            "San Pablo": {
+                "zip": "4000",
+                "barangays": ["Atisan", "Bagong Pook", "Bautista", "Concepcion", "Del Remedio", "Dolores", "Estrella", "Ilayang Bayan", "Libertad", "Malinaw", "Pila", "Rizal", "San Antonio 1", "San Antonio 2", "San Bartolome", "San Buenaventura", "San Crispin", "San Cristobal", "San Diego", "San Francisco", "San Gabriel", "San Gregorio", "San Ignacio", "San Isidro", "San Joaquin", "San Jose", "San Juan", "San Lorenzo", "San Lucas 1", "San Lucas 2", "San Marcos", "San Mateo", "San Miguel", "San Nicolas", "San Pedro", "San Rafael", "San Roque", "San Vicente", "Santa Ana", "Santa Catalina", "Santa Cruz", "Santa Elena", "Santa Felomina", "Santa Filomena", "Santa Isabel", "Santa Maria", "Santa Maria Magdalena", "Santa Monica", "Santa Veronica", "Santiago I", "Santiago II", "Santo Angel", "Santo Cristo", "Santo Niño", "Santisimo Rosario", "Soledad", "Timugan", "VII-A", "VII-B", "VII-C", "VII-D", "VII-E"]
+            },
+            "Santa Rosa": {
+                "zip": "4026",
+                "barangays": ["Aplaya", "Balibago", "Caingin", "Dila", "Dita", "Don Jose", "Ibaba", "Kanluran", "Labas", "Macabling", "Malitlit", "Malusak", "Market Area", "Pooc", "Pulong Santa Cruz", "Santo Domingo", "Sinalhan", "Tagapo"]
+            }
+        },
+        "Quezon": {
+            "Lucena": {
+                "zip": "4301",
+                "barangays": ["Barangay 1", "Barangay 2", "Barangay 3", "Barangay 4", "Barangay 5", "Barangay 6", "Barangay 7", "Barangay 8", "Barangay 9", "Barangay 10", "Barangay 11", "Barra", "Cotta", "Dalahican", "Domoit", "Gulang-Gulang", "Ibabang Dupay", "Ibabang Iyam", "Ibabang Talim", "Ilayang Dupay", "Ilayang Iyam", "Ilayang Talim", "Isabang", "Mayao Crossing", "Mayao Kanluran", "Mayao Parada", "Mayao Silangan", "Market View", "Ransohan", "Salinas", "Silangang Mayao", "Talao-Talao"]
+            },
+            "Tayabas": {
+                "zip": "4327",
+                "barangays": ["Alitao", "Angeles", "Arias", "Ayaas", "Baguio", "Bangyas", "Calumpang", "Camaysa", "Dapdap", "Domoit Kanluran", "Domoit Silangan", "Gibanga", "Ilasan", "Ipilan", "Isabang", "Katigan", "Kinatihan I", "Kinatihan II", "Lakawan", "Lalo", "Lawigue", "Lita", "Malaoa", "Mate", "Mayabobo", "Nangkaan", "Opias", "Palola", "Pook", "Potol", "San Diego", "San Isidro", "San Roque", "Silangang Katigan", "Talolong", "Tamlong", "Tongko"]
+            },
+            "Agdangan": {
+                "zip": "4304",
+                "barangays": ["Binagbag", "Dayap", "Ibabang Kinagunan", "Ilayang Kinagunan", "Kanluran Calutan", "Magsaysay", "Poblacion", "Salvacion", "Silangang Calutan", "Sildora"]
+            },
+            "Alabat": {
+                "zip": "4333",
+                "barangays": ["Angeles", "Bacong", "Balungay", "Buenavista", "Camagong", "Gordon", "Pambilan", "Villa Norte", "Villa Sur"]
+            },
+            "Atimonan": {
+                "zip": "4331",
+                "barangays": ["Balubad", "Balugohin", "Barangay Zone 1 (Pob.)", "Barangay Zone 2 (Pob.)", "Barangay Zone 3 (Pob.)", "Barangay Zone 4 (Pob.)", "Buhangin", "Caridad Ilaya", "Caridad Ibaba", "Habingan", "Inaclagan", "Kilait", "Kulawit", "Lakip", "Lubi", "Lumutan", "Malinao Ibaba", "Malinao Ilaya", "Malusak", "Manggalayan Labak", "Manggalayan Tagpuan", "Maypulot", "Ponon", "San Andres", "San Isidro", "San Jose Balatok", "San Rafael", "Santa Catalina", "Tagbakin", "Talaba"]
+            },
+            "Candelaria": {
+                "zip": "4323",
+                "barangays": ["Buenavista", "Bukal Norte", "Bukal Sur", "Dayap", "Kinatihan I", "Kinatihan II", "Malabanban Norte", "Malabanban Sur", "Mangilag Norte", "Mangilag Sur", "Masalukot I", "Masalukot II", "Masalukot III", "Masalukot IV", "Masalukot V", "Masin Norte", "Masin Sur", "Mayabobo", "Pahinga Norte", "Pahinga Sur", "Poblacion", "San Andres", "San Isidro", "Santa Catalina Norte", "Santa Catalina Sur", "Taguan"]
+            },
+            "Sariaya": {
+                "zip": "4322",
+                "barangays": ["Balugo", "Bignay I", "Bignay II", "Castillas", "Concepcion I", "Concepcion II", "Cuyaoyao", "Guis-Guis Talon", "Guis-Guis San Jose", "Janagdong I", "Janagdong II", "Limbon", "Lutucan I", "Lutucan II", "Mamala I", "Mamala II", "Manggalang I", "Manggalang II", "Montecillo", "Morong", "Pili", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Poblacion V", "Sampaloc I", "Sampaloc II", "Sampaloc III", "Sampaloc IV", "San Andres", "San Roque", "Tala", "Tumbaga I", "Tumbaga II", "Talaan I", "Talaan II"]
+            },
+            "Tiaong": {
+                "zip": "4325",
+                "barangays": ["Anastacio", "Ayusan I", "Ayusan II", "Behia", "Bukal", "Cabatang", "Cabay", "Del Rosario", "Lagalag", "Lalig", "Lusacan", "Paiisa", "Palagaran", "Poblacion I", "Poblacion II", "Poblacion III", "Poblacion IV", "Quipot", "San Francisco", "San Jose", "San Juan", "San Pedro", "Talisay", "Tamisian"]
+            }
+        },
+        "Rizal": {
+            "Antipolo": {
+                "zip": "1870",
+                "barangays": ["Bagong Nayon", "Beverly Hills", "Calawis", "Cupang", "Dalig", "Dela Paz", "Inarawan", "Mambugan", "Mayamot", "Muntindilaw", "San Isidro", "San Jose", "San Juan", "San Luis", "San Roque", "Santa Cruz"]
+            },
+            "Cainta": {
+                "zip": "1900",
+                "barangays": ["San Andres", "San Isidro", "San Juan", "San Roque", "Santa Rosa", "Santo Domingo", "Santo Niño"]
+            },
+            "Taytay": {
+                "zip": "1920",
+                "barangays": ["Dolores", "Muzon", "San Isidro", "San Juan", "Santa Ana", "Tatlong Kawayan"]
+            }
+        }
+    };
+
+    // Function to load cities based on province selection
+    function loadCities() {
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
+        const barangaySelect = document.getElementById('barangay');
+        const zipCodeInput = document.getElementById('zip_code');
+        
+        // Reset city dropdown
+        citySelect.innerHTML = '<option value="" disabled selected>Select a city/municipality</option>';
+        citySelect.disabled = false;
+        
+        // Reset barangay dropdown
+        barangaySelect.innerHTML = '<option value="" disabled selected>Select a barangay</option>';
+        barangaySelect.disabled = true;
+        
+        // Clear ZIP code
+        zipCodeInput.value = '';
+        
+        const selectedProvince = provinceSelect.value;
+        
+        // If a province is selected, populate cities
+        if (selectedProvince && locationData[selectedProvince]) {
+            const cities = Object.keys(locationData[selectedProvince]);
+            
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        }
+        
+        // Validate the fields after changes
+        validateLocationSelection();
+    }
+
+    // Function to load barangays based on city selection
+    function loadBarangays() {
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
+        const barangaySelect = document.getElementById('barangay');
+        
+        // Reset barangay dropdown
+        barangaySelect.innerHTML = '<option value="" disabled selected>Select a barangay</option>';
+        barangaySelect.disabled = false;
+        
+        const selectedProvince = provinceSelect.value;
+        const selectedCity = citySelect.value;
+        
+        // If both province and city are selected, populate barangays
+        if (selectedProvince && selectedCity && 
+            locationData[selectedProvince] && 
+            locationData[selectedProvince][selectedCity]) {
+            
+            const barangays = locationData[selectedProvince][selectedCity].barangays;
+            
+            barangays.forEach(barangay => {
+                const option = document.createElement('option');
+                option.value = barangay;
+                option.textContent = barangay;
+                barangaySelect.appendChild(option);
+            });
+        }
+        
+        // Validate the fields after changes
+        validateLocationSelection();
+    }
+
+    // Function to update ZIP code based on city selection
+    function updateZipCode() {
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
+        const zipCodeInput = document.getElementById('zip_code');
+        
+        const selectedProvince = provinceSelect.value;
+        const selectedCity = citySelect.value;
+        
+        // If both province and city are selected, set ZIP code
+        if (selectedProvince && selectedCity && 
+            locationData[selectedProvince] && 
+            locationData[selectedProvince][selectedCity]) {
+            
+            zipCodeInput.value = locationData[selectedProvince][selectedCity].zip;
+        } else {
+            zipCodeInput.value = '';
+        }
+    }
+
+    // Function to validate location selections
+    function validateLocationSelection() {
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
+        const barangaySelect = document.getElementById('barangay');
+        
+        const provinceWarning = document.getElementById('province_warning');
+        const cityWarning = document.getElementById('city_warning');
+        const barangayWarning = document.getElementById('barangay_warning');
+        
+        let isValid = true;
+        
+        // Validate province
+        if (provinceSelect.required && provinceSelect.value === '') {
+            provinceWarning.textContent = 'Please select a province.';
+            isValid = false;
+        } else {
+            provinceWarning.textContent = '';
+        }
+        
+        // Validate city
+        if (!citySelect.disabled && citySelect.required && citySelect.value === '') {
+            cityWarning.textContent = 'Please select a city/municipality.';
+            isValid = false;
+        } else {
+            cityWarning.textContent = '';
+        }
+        
+        // Validate barangay
+        if (!barangaySelect.disabled && barangaySelect.required && barangaySelect.value === '') {
+            barangayWarning.textContent = 'Please select a barangay.';
+            isValid = false;
+        } else {
+            barangayWarning.textContent = '';
+        }
+        
+        return isValid;
+    }
+
+    // Add event listeners when the document is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add validation for location dropdowns
+        document.getElementById('province').addEventListener('change', validateLocationSelection);
+        document.getElementById('city').addEventListener('change', validateLocationSelection);
+        document.getElementById('barangay').addEventListener('change', validateLocationSelection);
+        
+        // Add location validation to form validation
+        const originalValidateForm = window.validateForm;
+        window.validateForm = function() {
+            const locationValid = validateLocationSelection();
+            const otherValidations = originalValidateForm();
+            return locationValid && otherValidations;
+        };
+    });
 </script>
+
+<style>
+    .radio-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 5px;
+    }
+    
+    .radio-group label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+    }
+    
+    .privacy-text {
+        background-color: #f9f9f9;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    
+    .recruiter-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    .suggestions-dropdown {
+        position: absolute;
+        width: 100%;
+        max-height: 150px;
+        overflow-y: auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        z-index: 100;
+        display: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .suggestion-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    
+    .suggestion-item:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .suggestion-name {
+        color: #0056b3;
+        font-weight: 500;
+    }
+    
+    .suggestion-council {
+        color: #6c757d;
+        margin-left: 4px;
+        font-size: 0.9em;
+    }
+    
+    .checkbox-option {
+        margin-top: 8px;
+    }
+    
+    .file-info {
+        display: block;
+        margin-top: 4px;
+        color: #6c757d;
+        font-size: 0.85em;
+    }
+    
+    .file-upload-wrapper {
+        position: relative;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .file-upload-wrapper input[type="file"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        z-index: 2;
+    }
+    
+    .file-upload-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        cursor: pointer;
+    }
+    
+    .browse-btn {
+        background-color: #f0f0f0;
+        padding: 4px 12px;
+        border-radius: 3px;
+        color: #333;
+        font-size: 0.9em;
+    }
+    
+    .preview-container {
+        margin-top: 10px;
+        max-width: 300px;
+        border: 1px solid #ddd;
+        padding: 5px;
+        text-align: center;
+    }
+    
+    #signature-preview {
+        max-width: 100%;
+        max-height: 150px;
+    }
+    
+    textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+        font-family: inherit;
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+    
+    textarea:focus {
+        border-color: #0056b3;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.25);
+    }
+    
+    .styled-select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: #fff;
+        font-family: inherit;
+        font-size: 0.9em;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 1em;
+    }
+    
+    .styled-select:focus {
+        border-color: #0056b3;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.25);
+    }
+    
+    .styled-select:disabled {
+        background-color: #f5f5f5;
+        cursor: not-allowed;
+    }
+    
+    #zip_code {
+        background-color: #f5f5f5;
+        cursor: default;
+    }
+    
+    /* Enhanced password strength indicator */
+    .strength-indicator {
+        margin-top: 8px;
+        display: none;
+    }
+    
+    input[name="password"]:focus + .warning + .strength-indicator,
+    input[name="password"]:not(:placeholder-shown) + .warning + .strength-indicator {
+        display: block;
+    }
+    
+    .strength-text {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+    
+    .strength-bar {
+        height: 6px;
+        width: 0%;
+        border-radius: 3px;
+        transition: width 0.3s ease, background-color 0.3s ease;
+    }
+    
+    .strength-weak .strength-text {
+        color: #dc3545;
+    }
+    
+    .strength-medium .strength-text {
+        color: #ffc107;
+    }
+    
+    .strength-strong .strength-text {
+        color: #28a745;
+    }
+    
+    .strength-weak .strength-bar {
+        background-color: #dc3545;
+    }
+    
+    .strength-medium .strength-bar {
+        background-color: #ffc107;
+    }
+    
+    .strength-strong .strength-bar {
+        background-color: #28a745;
+    }
+</style>
 {% endblock %}

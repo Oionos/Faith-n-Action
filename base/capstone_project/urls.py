@@ -32,6 +32,13 @@ urlpatterns = [
     path('blockchain/', views.get_blockchain_data, name='blockchain'),
     # path('search-users/', views.search_users, name='search_users'),
 
+    # New endpoint for recruiter name autocomplete
+    path('search-members/', views.search_members, name='search_members'),
+
+    # Username and email validation endpoints
+    path('check-username/', views.check_username, name='check_username'),
+    path('check-email/', views.check_email, name='check_email'),
+
     path('forum/', views.forum, name='forum'),
     path('forum/messages/<int:category_id>/', views.get_messages, name='get_messages'),
     path('forum/send/', views.send_message, name='send_message'),
@@ -64,4 +71,13 @@ urlpatterns = [
     
     # Member activities
     path('member-activities/', views.member_activities, name='member_activities'),
+    
+    # My Recruits
+    path('my-recruits/', views.my_recruits, name='my_recruits'),
+    
+    # Add Recruitment Record
+    path('add-recruitment/', views.add_recruitment, name='add_recruitment'),
+    
+    # Change Council
+    path('change-council/<int:user_id>/', views.change_council, name='change_council'),
 ]

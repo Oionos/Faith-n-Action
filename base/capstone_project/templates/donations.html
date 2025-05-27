@@ -40,14 +40,44 @@ Knights of Columbus - Donations
             </ul>
         </div>
         {% endif %}
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="donationForm" onsubmit="return validateForm()">
             {% csrf_token %}
-            <p>{{ form.first_name.label_tag }} {{ form.first_name }} {{ form.first_name.errors }}</p>
-            <p>{{ form.middle_initial.label_tag }} {{ form.middle_initial }} {{ form.middle_initial.errors }}</p>
-            <p>{{ form.last_name.label_tag }} {{ form.last_name }} {{ form.last_name.errors }}</p>
-            <p>{{ form.email.label_tag }} {{ form.email }} {{ form.email.errors }}</p>
-            <p>{{ form.amount.label_tag }} {{ form.amount }} {{ form.amount.errors }}</p>
-            <p>{{ form.donation_date.label_tag }} {{ form.donation_date }} {{ form.donation_date.errors }}</p>
+            <div class="form-group">
+                <label for="id_first_name">First Name:</label>
+                <input type="text" id="id_first_name" name="first_name" value="{{ form.first_name.value|default:'' }}" required
+                       pattern="[A-Z][a-zA-Z]*" oninput="validateName(this)">
+                <span class="warning" id="first_name_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="id_middle_initial">Middle Initial:</label>
+                <input type="text" id="id_middle_initial" name="middle_initial" value="{{ form.middle_initial.value|default:'' }}" 
+                       pattern="[A-Z]" oninput="validateMiddleInitial(this)" maxlength="1">
+                <span class="warning" id="middle_initial_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="id_last_name">Last Name:</label>
+                <input type="text" id="id_last_name" name="last_name" value="{{ form.last_name.value|default:'' }}" required
+                       pattern="[A-Z][a-zA-Z]*( [A-Z][a-zA-Z]*)*" oninput="validateName(this)">
+                <span class="warning" id="last_name_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="id_email">Email:</label>
+                <input type="email" id="id_email" name="email" value="{{ form.email.value|default:'' }}" required
+                       oninput="validateEmail(this)">
+                <span class="warning" id="email_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="id_amount">Amount (PHP):</label>
+                <input type="number" id="id_amount" name="amount" value="{{ form.amount.value|default:'' }}" required min="1" step="0.01"
+                       oninput="validateAmount(this)">
+                <span class="warning" id="amount_warning"></span>
+            </div>
+            <div class="form-group">
+                <label for="id_donation_date">Donation Date:</label>
+                <input type="date" id="id_donation_date" name="donation_date" value="{{ form.donation_date.value|default:'' }}" required
+                       oninput="validateDate(this)">
+                <span class="warning" id="donation_date_warning"></span>
+            </div>
             <button type="submit" class="btn btn-primary">Donate</button>
         </form>
         {% if show_manual_link %}
@@ -56,8 +86,154 @@ Knights of Columbus - Donations
             <a href="{% url 'review_manual_donations' %}" class="manual-donation-link">Review Manual Donations</a>
         </p>
         {% endif %}
-        <button id="view-blockchain" class="btn btn-secondary" onclick="window.location.href='{% url 'blockchain' %}'">View Blockchain</button>
+        <button id="view-blockchain" class="btn btn-secondary">View Blockchain</button>
     </section>
 </div>
+
+<style>
+.warning {
+    color: #d9534f;
+    font-size: 0.85em;
+    display: block;
+    margin-top: 5px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+</style>
+
+<script>
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
+    function validateName(input) {
+        const warning = document.getElementById(input.id.replace('id_', '') + '_warning');
+        let regex;
+        
+        if (input.id === 'id_first_name') {
+            // First name: must start with capital and contain only letters
+            regex = /^[A-Z][a-zA-Z]*$/;
+            if (!input.value) {
+                warning.textContent = 'First name is required.';
+                return false;
+            } else if (!regex.test(input.value)) {
+                warning.textContent = 'First name must start with a capital letter and contain only letters.';
+                return false;
+            }
+        } else {
+            // Last name: must start with capital, can have compound names
+            regex = /^[A-Z][a-zA-Z]*( [A-Z][a-zA-Z]*)*$/;
+            if (!input.value) {
+                warning.textContent = 'Last name is required.';
+                return false;
+            } else if (!regex.test(input.value)) {
+                warning.textContent = 'Last name must start with a capital letter and can include spaces for compound names (e.g., De Torres).';
+                return false;
+            }
+        }
+        
+        warning.textContent = '';
+        return true;
+    }
+
+    function validateMiddleInitial(input) {
+        const warning = document.getElementById('middle_initial_warning');
+        const regex = /^[A-Z]$/;
+        
+        if (input.value && !regex.test(input.value)) {
+            warning.textContent = 'Middle initial must be a single capital letter.';
+            return false;
+        }
+        
+        warning.textContent = '';
+        return true;
+    }
+
+    function validateEmail(input) {
+        const warning = document.getElementById('email_warning');
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (!input.value) {
+            warning.textContent = 'Email is required.';
+            return false;
+        } else if (!regex.test(input.value)) {
+            warning.textContent = 'Please enter a valid email address (e.g., user@domain.com).';
+            return false;
+        }
+        
+        warning.textContent = '';
+        return true;
+    }
+
+    function validateAmount(input) {
+        const warning = document.getElementById('amount_warning');
+        const amount = parseFloat(input.value);
+        
+        if (!input.value) {
+            warning.textContent = 'Amount is required.';
+            return false;
+        } else if (isNaN(amount) || amount <= 0) {
+            warning.textContent = 'Please enter a valid positive amount.';
+            return false;
+        }
+        
+        warning.textContent = '';
+        return true;
+    }
+
+    function validateDate(input) {
+        const warning = document.getElementById('donation_date_warning');
+        
+        if (!input.value) {
+            warning.textContent = 'Donation date is required.';
+            return false;
+        }
+        
+        const selectedDate = new Date(input.value);
+        const today = new Date();
+        
+        // Set both dates to midnight for proper comparison
+        selectedDate.setHours(0, 0, 0, 0);
+        today.setHours(0, 0, 0, 0);
+        
+        // Compare dates
+        if (selectedDate > today) {
+            warning.textContent = 'Donation date cannot be in the future.';
+            return false;
+        }
+        
+        warning.textContent = '';
+        return true;
+    }
+
+    function validateForm() {
+        const firstNameValid = validateName(document.getElementById('id_first_name'));
+        const middleInitialValid = validateMiddleInitial(document.getElementById('id_middle_initial'));
+        const lastNameValid = validateName(document.getElementById('id_last_name'));
+        const emailValid = validateEmail(document.getElementById('id_email'));
+        const amountValid = validateAmount(document.getElementById('id_amount'));
+        const dateValid = validateDate(document.getElementById('id_donation_date'));
+        
+        return firstNameValid && middleInitialValid && lastNameValid && emailValid && 
+               amountValid && dateValid && fileValid;
+    }
+
+    document.getElementById('view-blockchain').addEventListener('click', function() {
+        window.location.href = '{% url "blockchain" %}';
+    });
+</script>
 <script src="{% static 'js/payment.js' %}?v={% now 'U' %}"></script>
 {% endblock %}

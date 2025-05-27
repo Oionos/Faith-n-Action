@@ -44,6 +44,16 @@ Knights of Columbus - Council Events
                 </div>
 
                 <div class="filter-group">
+                    <label for="sort">Sort By:</label>
+                    <select name="sort" id="sort" class="filter-select">
+                        <option value="date" {% if sort_by == 'date' or not sort_by %}selected{% endif %}>Date (Upcoming First)</option>
+                        <option value="date_desc" {% if sort_by == 'date_desc' %}selected{% endif %}>Date (Latest First)</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Alphabetical</option>
+                        <option value="category" {% if sort_by == 'category' %}selected{% endif %}>Category</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-buttons">
                     <button type="submit" class="dashboard-btn">Apply Filters</button>
                     <a href="{% url 'council_events' %}" class="dashboard-btn secondary">Clear Filters</a>
                 </div>
@@ -236,6 +246,14 @@ Knights of Columbus - Council Events
     font-size: 1rem;
     background-color: white;
 }
+
+.filter-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-direction: row;
+    height: 3rem;
+}
+
 
 /* Improved search container */
 .search-container {

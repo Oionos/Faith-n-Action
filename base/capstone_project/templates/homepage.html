@@ -9,7 +9,7 @@ Knights of Columbus
 <link rel="stylesheet" href="{% static 'css/homepage-style.css' %}?v={% now 'U' %}">
 </head>
 <body>
-    <div class="background" style="background: url('{% static 'images/homepage-img.jpg' %}') no-repeat center/cover;">
+    <div class="background" style="background: url('{% static 'images/homepage-img.jpeg' %}') no-repeat center/cover;">
         <h1>Welcome to the Knights of Columbus</h1>
         <p>Strengthening faith, families, and communities since 1882.</p>
         <a href="/donations/" class="cta-button">Support Our Mission</a>
@@ -61,6 +61,14 @@ Knights of Columbus
             <div class="user-input">
                 <h2>Contact Us</h2>
                 <p>Have questions? Reach out to learn more about the Knights of Columbus.</p>
+
+                {% if success %}
+                    <p style="color: rgb(255, 205, 56);">{{ success }}</p>
+                {% endif %}
+                {% if error %}
+                    <p style="color: red;">{{ error }}</p>
+                {% endif %}
+
                 <form method="post">
                     {% csrf_token %}
                     <input type="text" name="name" placeholder="Name" required>

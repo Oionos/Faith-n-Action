@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Knights of Columbus - Add Recruitment Record
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}?v={% now 'U' %}">
+
+<div class="dashboard-container">
+    <div class="content-card">
+        <div class="dashboard-header">
+            <h1>Add Recruitment Record</h1>
+            <div>
+                <a href="{% url 'dashboard' %}" class="dashboard-btn secondary back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+        
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="form-container">
+            <form method="post" action="{% url 'add_recruitment' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="recruiter_id">Recruiter:</label>
+                    <select name="recruiter_id" id="recruiter_id" class="form-control" required>
+                        <option value="">-- Select Recruiter --</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="recruit_id">Recruit:</label>
+                    <select name="recruit_id" id="recruit_id" class="form-control" required>
+                        <option value="">-- Select Recruit --</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="dashboard-btn">
+                        <i class="fas fa-plus"></i> Add Recruitment Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--heading-color);
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid rgba(13, 52, 113, 0.2);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+    }
+    
+    .form-actions {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    .messages {
+        margin-bottom: 2rem;
+    }
+    
+    .message {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: var(--border-radius);
+        background-color: #f8f9fa;
+        border-left: 4px solid #6c757d;
+    }
+    
+    .message.success {
+        background-color: #d4edda;
+        border-left-color: #28a745;
+        color: #155724;
+    }
+    
+    .message.error {
+        background-color: #f8d7da;
+        border-left-color: #dc3545;
+        color: #721c24;
+    }
+    
+    .message.warning {
+        background-color: #fff3cd;
+        border-left-color: #ffc107;
+        color: #856404;
+    }
+    
+    .back-btn {
+        margin-bottom: 1rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent selecting the same user as both recruiter and recruit
+        const recruiterSelect = document.getElementById('recruiter_id');
+        const recruitSelect = document.getElementById('recruit_id');
+        
+        function updateSelections() {
+            const recruiterId = recruiterSelect.value;
+            const recruitId = recruitSelect.value;
+            
+            // Reset options
+            for (let option of recruiterSelect.options) {
+                option.disabled = false;
+            }
+            
+            for (let option of recruitSelect.options) {
+                option.disabled = false;
+            }
+            
+            // Disable selected options in the other dropdown
+            if (recruiterId) {
+                for (let option of recruitSelect.options) {
+                    if (option.value === recruiterId) {
+                        option.disabled = true;
+                    }
+                }
+            }
+            
+            if (recruitId) {
+                for (let option of recruiterSelect.options) {
+                    if (option.value === recruitId) {
+                        option.disabled = true;
+                    }
+                }
+            }
+        }
+        
+        recruiterSelect.addEventListener('change', updateSelections);
+        recruitSelect.addEventListener('change', updateSelections);
+        
+        // Initial update
+        updateSelections();
+    });
+</script>
+{% endblock %} 

@@ -67,8 +67,8 @@ Knights of Columbus - Member Dashboard
                         </div>
                     {% endif %}
                     <h4>{{ user.first_name }} {{ user.last_name }}</h4>
-                    <p>Member since: {{ user.date_joined|date:"F j, Y" }}</p>
-                    <!-- <p>Degree: {{ user.get_current_degree_display }}</p> -->
+                    <p>Date Registered: {{ user.date_joined|date:"F j, Y" }}</p>
+                    <p>Degree: <span class="degree-badge degree-{{ user.current_degree|default:'1st' }}">{{ user.get_current_degree_display }}</span></p>
                     {% if user.council %}
                         <p>{{ user.council.name }}</p>
                     {% else %}
@@ -79,6 +79,24 @@ Knights of Columbus - Member Dashboard
                             <i class="fas fa-user-edit"></i>Edit Profile
                         </a>
                     </div>
+                </div>
+            </div>
+
+            <!-- My Recruits Card -->
+            <div class="content-card dashboard-card">
+                <div class="dashboard-summary">
+                    <div class="summary-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>My Recruits</h3>
+                        <p class="summary-label">Track your recruitment progress and degree advancement</p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="{% url 'my_recruits' %}" class="dashboard-btn">
+                        <i class="fas fa-users"></i>View My Recruits
+                    </a>
                 </div>
             </div>
 

@@ -52,7 +52,7 @@ Knights of Columbus - Member List
                     </select>
                 </div>
 
-                <div class="filter-group">
+                <div class="filter-group filter-buttons">
                     <button type="submit" class="dashboard-btn">Apply Filters</button>
                     <a href="{% url 'member_list' %}" class="dashboard-btn secondary">Clear Filters</a>
                 </div>
@@ -91,7 +91,7 @@ Knights of Columbus - Member List
                 <div class="member-details">
                     <div class="detail-column">
                         <p><strong>Council:</strong> {{ user.council.name|default:"No council" }}</p>
-                        <p><strong>Member Since:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
+                        <p><strong>Date Registered:</strong> {{ user.date_joined|date:"F j, Y" }}</p>
                         <p><strong>Degree:</strong> {{ user.get_current_degree_display }}</p>
                     </div>
                     <div class="detail-column">
@@ -104,6 +104,11 @@ Knights of Columbus - Member List
                     <button class="dashboard-btn view-member-btn" data-user-id="{{ user.id }}">
                         <i class="fas fa-eye"></i>View Details
                     </button>
+                    {% if request.user.role == 'admin' %}
+                    <a href="{% url 'change_council' user_id=user.id %}" class="dashboard-btn">
+                        <i class="fas fa-exchange-alt"></i>Change Council
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             {% empty %}
@@ -170,6 +175,13 @@ Knights of Columbus - Member List
 .filter-group {
     flex: 1;
     min-width: 200px;
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-direction: row;
+    height: 3rem;
 }
 
 .filter-group label {

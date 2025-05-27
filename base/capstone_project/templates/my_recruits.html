@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Knights of Columbus - My Recruits
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/dashboard_shared.css' %}?v={% now 'U' %}">
+
+<div class="dashboard-container">
+    <div class="content-card">
+        <div class="dashboard-header">
+            <h1>My Recruits</h1>
+            <div>
+                <a href="{% url 'dashboard' %}" class="dashboard-btn secondary back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'add_recruitment' %}" class="dashboard-btn">
+                    <i class="fas fa-plus"></i> Add Recruitment Record
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Degree Progress Section -->
+        <div class="degree-progress-container">
+            <div class="degree-info">
+                <h3>Current Degree: <span class="degree-badge degree-{{ request.user.current_degree|default:'1st' }}">{{ current_degree }}</span></h3>
+                
+                {% if next_degree %}
+                <div class="next-degree-info">
+                    <h4>Next Degree: {{ next_degree }}</h4>
+                    <div class="requirements">
+                        <p>Requirements:</p>
+                        <ul>
+                            {% if recruits_needed > 0 %}
+                            <li>
+                                <i class="fas {% if recruits_needed > 0 %}fa-times-circle text-danger{% else %}fa-check-circle text-success{% endif %}"></i>
+                                {% if recruits_needed > 0 %}
+                                Need {{ recruits_needed }} more recruit{{ recruits_needed|pluralize }}
+                                {% else %}
+                                Recruitment requirement met
+                                {% endif %}
+                            </li>
+                            {% else %}
+                            <li>
+                                <i class="fas fa-check-circle text-success"></i>
+                                Recruitment requirement met
+                            </li>
+                            {% endif %}
+                            
+                            {% if needs_event_attendance %}
+                            <li>
+                                <i class="fas {% if has_recent_attendance %}fa-check-circle text-success{% else %}fa-times-circle text-danger{% endif %}"></i>
+                                {% if has_recent_attendance %}
+                                Recent event attendance requirement met
+                                {% else %}
+                                Need to attend at least one event in the last month
+                                {% endif %}
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                {% else %}
+                <div class="next-degree-info">
+                    <h4>Congratulations!</h4>
+                    <p>You have reached the highest degree (4th Degree).</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-value">{{ total_recruits }}</div>
+                    <div class="stat-label">Total Recruits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ recent_recruits }}</div>
+                    <div class="stat-label">Recent Recruits<br>(Last 30 Days)</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recruits List -->
+        <div class="section-header">
+            <h2>Recruitment History</h2>
+        </div>
+        
+        <div class="members-list">
+            {% for recruitment in recruitments %}
+            <div class="member-item">
+                <div class="member-header">
+                    <div class="member-name-section">
+                        {% if recruitment.recruited.profile_picture %}
+                            <img src="{{ recruitment.recruited.profile_picture.url }}" alt="Profile Picture" class="member-pic">
+                        {% else %}
+                            <div class="member-pic">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h3>{{ recruitment.recruited.first_name }} {{ recruitment.recruited.last_name }}</h3>
+                            <span class="role-badge role-{{ recruitment.recruited.role }}">{{ recruitment.recruited.get_role_display }}</span>
+                            {% if recruitment.recruited.current_degree %}
+                            <span class="degree-badge degree-{{ recruitment.recruited.current_degree }}">{{ recruitment.recruited.get_current_degree_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- <div class="recruitment-date">
+                        <i class="fas fa-calendar-alt"></i> {{ recruitment.date_recruited|date:"F j, Y" }}
+                    </div> -->
+                </div>
+                
+                <div class="member-details">
+                    <div class="detail-column">
+                        <p><strong>Username:</strong> {{ recruitment.recruited.username }}</p>
+                        <p><strong>Email:</strong> {{ recruitment.recruited.email }}</p>
+                    </div>
+                    <div class="detail-column">
+                        <p><strong>Council:</strong> {{ recruitment.recruited.council.name|default:"Not assigned" }}</p>
+                        <p><strong>Date Registered:</strong> {{ recruitment.recruited.date_joined|date:"F j, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-user-plus"></i>
+                <p>You haven't recruited any members yet.</p>
+                <p>Invite others to join Knights of Columbus to earn higher degrees!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .degree-progress-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        justify-content: space-between;
+    }
+    
+    .degree-info {
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .stats-container {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .stat-card {
+        background-color: #f8f9fa;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        text-align: center;
+        min-width: 120px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-top: 0.5rem;
+    }
+    
+    .degree-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+    
+    .degree-1st {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .degree-2nd {
+        background-color: #17a2b8;
+        color: white;
+    }
+    
+    .degree-3rd {
+        background-color: #6f42c1;
+        color: white;
+    }
+    
+    .degree-4th {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .next-degree-info {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .requirements ul {
+        list-style: none;
+        padding-left: 0;
+        margin-top: 0.5rem;
+    }
+    
+    .requirements li {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .requirements li i {
+        margin-right: 0.5rem;
+    }
+    
+    .text-success {
+        color: #28a745;
+    }
+    
+    .text-danger {
+        color: #dc3545;
+    }
+    
+    .section-header {
+        margin: 2rem 0 1rem;
+    }
+    
+    .recruitment-date {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #adb5bd;
+    }
+    
+    @media (max-width: 768px) {
+        .degree-progress-container {
+            flex-direction: column;
+        }
+        
+        .stats-container {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %} 

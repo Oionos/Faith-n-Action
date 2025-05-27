@@ -72,7 +72,13 @@ Knights of Columbus - Council Members
                             </div>
                         {% endif %}
                         <div>
-                            <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+                            <h3>
+                                {{ user.first_name }}
+                                {% if user.second_name %} {{ user.second_name }}{% endif %}
+                                <!-- {% if user.middle_name %} {{ user.middle_name }}{% endif %} -->
+                                {{ user.last_name }}
+                                {% if user.suffix %} {{ user.suffix }}{% endif %}
+                            </h3>
                             <span class="role-badge role-{{ user.role }}">{{ user.get_role_display }}</span>
                         </div>
                     </div>
@@ -93,6 +99,11 @@ Knights of Columbus - Council Members
                     <button class="dashboard-btn view-member-btn" data-user-id="{{ user.id }}">
                         <i class="fas fa-eye"></i>View Details
                     </button>
+                    {% if request.user.role == 'admin' or request.user.role == 'officer' and user.role == 'member' %}
+                    <a href="{% url 'change_council' user_id=user.id %}" class="dashboard-btn">
+                        <i class="fas fa-exchange-alt"></i>Change Council
+                    </a>
+                    {% endif %}
                 </div>
             </div>
             {% empty %}
@@ -539,7 +550,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             </div>
                             
-                            <h4>${data.first_name} ${data.middle_name ? data.middle_name + ' ' : ''}${data.last_name} ${data.suffix || ''}</h4>
+                            <h4>
+                                ${data.first_name}
+                                ${data.second_name ? data.second_name + ' ' : ''}
+                                ${data.middle_name ? data.middle_name + ' ' : ''}
+                                ${data.last_name}
+                                ${data.suffix ? ' ' + data.suffix : ''}
+                            </h4>
                             <span class="role-badge role-${data.role}">${data.role_display}</span>
                             
                             <div class="detail-group">

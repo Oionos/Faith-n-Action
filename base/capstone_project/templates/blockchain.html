@@ -9,7 +9,7 @@ Knights of Columbus - Blockchain
 <link rel="stylesheet" href="{% static 'css/blockchain.css' %}">
 <div class="blockchain-container">
     <div class="header">
-        <h1>Donation Blockchain</h1>
+        <h1>Donation Ledger</h1>
         <p>View the immutable record of all donation transactions.</p>
     </div>
     {% if messages %}
@@ -40,7 +40,7 @@ Knights of Columbus - Blockchain
                             <td>{{ block.index }}</td>
                             <td>{{ block.timestamp|date:"Y-m-d H:i:s" }}</td>
                             <td>{{ block.proof }}</td>
-                            <td>{{ block.current_hash }}</td>
+                            <td>{{ block.hash }}</td>
                             <td>{{ block.previous_hash }}</td>
                             <td>
                                 {% if block.transactions %}

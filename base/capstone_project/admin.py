@@ -22,8 +22,6 @@ class UserAdmin(BaseUserAdmin):
         'role',
         'council',
         'birthday',
-        'gender',
-        'religion',
         'get_full_address',
         'is_active',
     )
@@ -49,14 +47,23 @@ class UserAdmin(BaseUserAdmin):
                 'contact_number',
                 'birthday',
                 'age',
-                'gender',
-                'religion',
                 'profile_picture',
+                'e_signature',
             )
         }),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Knights of Columbus Info', {
-            'fields': ('role', 'council', 'current_degree', 'is_archived')
+            'fields': (
+                'role', 
+                'council', 
+                'current_degree', 
+                'is_archived',
+                'practical_catholic',
+                'marital_status',
+                'occupation',
+                'recruiter_name',
+                'voluntary_join'
+            )
         }),
     )
     add_fieldsets = (
@@ -79,10 +86,13 @@ class UserAdmin(BaseUserAdmin):
                 'province',
                 'contact_number',
                 'birthday',
-                'gender',
-                'religion',
                 'role',
                 'council',
+                'practical_catholic',
+                'marital_status',
+                'occupation',
+                'recruiter_name',
+                'voluntary_join'
             ),
         }),
     )

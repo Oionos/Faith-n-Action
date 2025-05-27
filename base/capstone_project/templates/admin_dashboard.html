@@ -32,11 +32,30 @@ Knights of Columbus - Admin Dashboard
                     {% else %}
                         <p>No council assigned</p>
                     {% endif %}
+                    <p>Degree: <span class="degree-badge degree-{{ user.current_degree|default:'1st' }}">{{ user.get_current_degree_display }}</span></p>
                     <div class="action-buttons">
                         <a href="{% url 'edit_profile' %}" class="dashboard-btn">
                             <i class="fas fa-user-edit"></i>Edit Profile
                         </a>
                     </div>
+                </div>
+            </div>
+
+            <!-- My Recruits Card -->
+            <div class="content-card dashboard-card">
+                <div class="dashboard-summary">
+                    <div class="summary-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3>My Recruits</h3>
+                        <p class="summary-label">Track your recruitment progress and degree advancement</p>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <a href="{% url 'my_recruits' %}" class="dashboard-btn">
+                        <i class="fas fa-users"></i>View My Recruits
+                    </a>
                 </div>
             </div>
 
@@ -52,7 +71,7 @@ Knights of Columbus - Admin Dashboard
                         <p class="summary-label">Active Users</p>
                     </div>
                 </div>
-                <div class="action-buttons" style="justify-content: flex-start; margin-bottom: 1rem;">
+                <div class="action-buttons" style="justify-content: center; margin-bottom: 1rem;">
                     <a href="{% url 'manage_roles' %}" class="dashboard-btn">
                         <i class="fas fa-user-tag"></i>Manage Roles
                     </a>
@@ -77,7 +96,7 @@ Knights of Columbus - Admin Dashboard
                         <p class="summary-label">Approved Events</p>
                     </div>
                 </div>
-                <div class="action-buttons" style="justify-content: flex-start; margin-bottom: 1rem;">
+                <div class="action-buttons" style="justify-content: center; margin-bottom: 1rem;">
                     <a href="{% url 'add_event' %}" class="dashboard-btn">
                         <i class="fas fa-plus"></i>Add Event
                     </a>
@@ -86,6 +105,10 @@ Knights of Columbus - Admin Dashboard
                     </a>
                     <a href="{% url 'event_list' %}" class="dashboard-btn">
                         <i class="fas fa-list"></i>View All Events
+                    </a>
+                    </a>
+                    <a href="{% url 'archived_events' %}" class="dashboard-btn">
+                        <i class="fas fa-archive"></i>Archived Events
                     </a>
                 </div>
             </div>
@@ -102,7 +125,7 @@ Knights of Columbus - Admin Dashboard
                         <p class="summary-label">Council Reports</p>
                     </div>
                 </div>
-                <div class="action-buttons" style="justify-content: flex-start; margin-bottom: 1rem;">
+                <div class="action-buttons" style="justify-content: center; margin-bottom: 1rem;">
                     <a href="{% url 'analytics_view' %}" class="dashboard-btn">
                         <i class="fas fa-chart-line"></i>View Analytics
                     </a>
