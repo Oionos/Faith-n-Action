@@ -9,7 +9,8 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 from pathlib import Path
 from decouple import config
 import os
@@ -170,6 +171,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+<<<<<<< HEAD
 # Email settings for SendGrid
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.sendgrid.net'
@@ -178,3 +180,14 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'apikey'  # Literal string 'apikey'
 EMAIL_HOST_PASSWORD = config('SENDGRID_API_KEY')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER')
+=======
+def load_keys():
+    base_dir = BASE_DIR
+    with open(os.path.join(base_dir, 'private_key.pem'), 'rb') as f:
+        private_key = serialization.load_pem_private_key(f.read(), password=None, backend=default_backend())
+    with open(os.path.join(base_dir, 'public_key.pem'), 'rb') as f:
+        public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
+    return private_key, public_key
+
+PRIVATE_KEY, PUBLIC_KEY = load_keys()
+>>>>>>> main

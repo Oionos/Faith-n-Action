@@ -211,8 +211,6 @@ class Notification(models.Model):
     class Meta:
         ordering = ['-timestamp']
 
-
-
 class Block(models.Model):
     index = models.IntegerField()
     timestamp = models.DateTimeField()
@@ -224,7 +222,7 @@ class Block(models.Model):
     def calculate_hash(self):
         if not isinstance(self.timestamp, datetime):
             logger.error(f"Invalid timestamp for Block {self.index}: {self.timestamp}, type={type(self.timestamp)}")
-            self.timestamp = timezone.now()  # Fallback
+            self.timestamp = timezone.now()
         block_string = json.dumps(
             {
                 'index': self.index,
@@ -249,10 +247,10 @@ class Block(models.Model):
         logger.info(f"Block {self.index} saved with hash={self.hash}")
 
 def block_pre_save(sender, instance, **kwargs):
-    if instance.pk:  # Block already exists
+    if instance.pk:
         logger.error(f"Attempt to modify Block {instance.index} rejected")
         raise ValidationError("Block modifications are not allowed")
-pre_save.connect(block_pre_save, sender=Block)
+pre_save.connect(block_pre_save, sender=Block)  
 
 class Blockchain(models.Model):
     pending_transactions = models.JSONField(default=list)
@@ -268,7 +266,7 @@ class Blockchain(models.Model):
                 previous_hash='0',
                 hash='0'
             )
-            genesis_block.save()  # Save will compute hash
+            genesis_block.save()
             logger.info("Genesis block created")
 
     def get_chain(self):
@@ -287,18 +285,18 @@ class Blockchain(models.Model):
 
     def add_transaction(self, donation, public_key):
         try:
-            # Verify donation signature
             if not donation.verify_signature(public_key):
                 logger.error(f"Invalid signature for donation {donation.transaction_id}")
                 return False
 
             transaction = {
                 'transaction_id': donation.transaction_id,
-                'donor': f"{donation.first_name} {donation.last_name}",
-                'email': donation.email,
+                'donor': f"{donation.first_name} {donation.last_name}" if donation.first_name != "Anonymous" else "Anonymous",
+                'email': donation.email if donation.email else "N/A",
                 'amount': str(donation.amount),
-                'date': donation.donation_date.isoformat() if isinstance(donation.donation_date, date) else str(donation.donation_date),
+                'date': donation.donation_date.strftime('%Y-%m-%d') if donation.donation_date else "N/A",  # Ensure date is in YYYY-MM-DD format
                 'payment_method': donation.payment_method,
+                'status': donation.status,  # Add status field
                 'timestamp': timezone.now().isoformat()
             }
             
@@ -309,7 +307,7 @@ class Blockchain(models.Model):
         except Exception as e:
             logger.error(f"Error adding transaction: {str(e)}")
             return False
-
+    
     def get_previous_block(self):
         try:
             latest_block = Block.objects.latest('index')
@@ -346,17 +344,15 @@ class Blockchain(models.Model):
     def is_chain_valid(self):
         blocks = Block.objects.all().order_by('index')
         if not blocks:
-            return True  # Empty chain is valid
+            return True
             
         previous_block = None
         for block in blocks:
             if previous_block:
-                # Check hash link
                 if block.previous_hash != previous_block.hash:
                     logger.error(f"Invalid hash link at block {block.index}")
                     return False
                     
-                # Check proof of work
                 hash_operation = hashlib.sha256(str(block.proof**2 - previous_block.proof**2).encode()).hexdigest()
                 if hash_operation[:4] != '0000':
                     logger.error(f"Invalid proof of work at block {block.index}")
@@ -387,7 +383,6 @@ class Blockchain(models.Model):
             )
             block.save()
             
-            # Clear pending transactions after creating a block
             self.pending_transactions = []
             self.save()
             
@@ -442,10 +437,11 @@ class Donation(models.Model):
     email = models.EmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     donation_date = models.DateField(default=timezone.now)
-    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='gcash')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='manual')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     source_id = models.CharField(max_length=100, blank=True, null=True)
     signature = models.TextField(blank=True, null=True)
+    council = models.ForeignKey('Council', on_delete=models.SET_NULL, null=True, blank=True)
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -466,10 +462,12 @@ class Donation(models.Model):
     def sign_donation(self, private_key):
         """Sign the donation data with the provided private key"""
         try:
-            # Create a string representation of the donation data
-            donation_data = f"{self.transaction_id}:{self.first_name}:{self.last_name}:{self.email}:{self.amount}:{self.donation_date.isoformat() if isinstance(self.donation_date, date) else str(self.donation_date)}:{self.payment_method}"
+            first_name = self.first_name if self.first_name != "Anonymous" else "Anonymous"
+            last_name = self.last_name if self.last_name else ""
+            email = self.email if self.email else "anonymous@example.com"
             
-            # Sign the data
+            donation_data = f"{self.transaction_id}:{first_name}:{last_name}:{email}:{self.amount}:{self.donation_date.isoformat() if isinstance(self.donation_date, date) else str(self.donation_date)}:{self.payment_method}"
+            
             signature = private_key.sign(
                 donation_data.encode(),
                 padding.PSS(
@@ -479,7 +477,6 @@ class Donation(models.Model):
                 hashes.SHA256()
             )
             
-            # Store the base64 encoded signature
             self.signature = base64.b64encode(signature).decode('utf-8')
             return True
         except Exception as e:
@@ -493,13 +490,14 @@ class Donation(models.Model):
             return False
             
         try:
-            # Recreate the original data string
-            donation_data = f"{self.transaction_id}:{self.first_name}:{self.last_name}:{self.email}:{self.amount}:{self.donation_date.isoformat() if isinstance(self.donation_date, date) else str(self.donation_date)}:{self.payment_method}"
+            first_name = self.first_name if self.first_name != "Anonymous" else "Anonymous"
+            last_name = self.last_name if self.last_name else ""
+            email = self.email if self.email else "anonymous@example.com"
             
-            # Decode the stored signature
+            donation_data = f"{self.transaction_id}:{first_name}:{last_name}:{email}:{self.amount}:{self.donation_date.isoformat() if isinstance(self.donation_date, date) else str(self.donation_date)}:{self.payment_method}"
+            
             signature = base64.b64decode(self.signature)
             
-            # Verify the signature
             public_key.verify(
                 signature,
                 donation_data.encode(),
@@ -519,11 +517,9 @@ class Donation(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} - {self.amount} - {self.get_status_display()}"
-
+        
 def receipt_upload_path(instance, filename):
-    # Get file extension
     ext = filename.split('.')[-1]
-    # Generate a unique filename
     new_filename = f"{instance.transaction_id}.{ext}"
     return os.path.join('donation_receipts', new_filename)
 

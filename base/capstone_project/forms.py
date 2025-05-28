@@ -30,17 +30,47 @@ class DonationForm(forms.ModelForm):
         return email
 
 class ManualDonationForm(forms.ModelForm):
+    donate_anonymously = forms.BooleanField(
+        required=False,
+        label="Donate Anonymously",
+        help_text="Check this box to donate without providing personal information."
+    )
+
     class Meta:
         model = Donation
-        fields = ['first_name', 'middle_initial', 'last_name', 'email', 'amount', 'donation_date', 'signature']
+        fields = ['first_name', 'middle_initial', 'last_name', 'email', 'amount', 'donation_date', 'donate_anonymously']  # Removed signature
         widgets = {
             'donation_date': forms.DateInput(attrs={'type': 'date'}),
-            'signature': forms.Textarea(attrs={'rows': 4, 'cols': 50}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
-            self.initial['transaction_id'] = f"MANUAL-{uuid.uuid4().hex[:8]}"
+            self.initial['transaction_id'] = f"KC-{uuid.uuid4().hex[:8]}"
             self.initial['payment_method'] = 'manual'
             self.initial['source_id'] = ''
+        for field in ['first_name', 'middle_initial', 'last_name', 'email']:
+            self.fields[field].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        donate_anonymously = cleaned_data.get('donate_anonymously', False)
+        amount = cleaned_data.get('amount')
+        donation_date = cleaned_data.get('donation_date')
+
+        if not donate_anonymously:
+            if not cleaned_data.get('first_name'):
+                self.add_error('first_name', "First name is required unless donating anonymously.")
+            if not cleaned_data.get('last_name'):
+                self.add_error('last_name', "Last name is required unless donating anonymously.")
+            if not cleaned_data.get('email'):
+                self.add_error('email', "Email is required unless donating anonymously.")
+
+        if amount is None or amount <= 0:
+            self.add_error('amount', "Amount must be greater than 0.")
+        if amount and amount < 100:
+            self.add_error('amount', "Amount must be at least ₱100.")
+        if not donation_date:
+            self.add_error('donation_date', "Donation date is required.")
+
+        return cleaned_data
