@@ -816,6 +816,7 @@ def get_messages(request, category_id):
     return JsonResponse({'messages': messages_data})
 
 @login_required
+@csrf_protect
 def send_message(request):
     if request.method == 'POST':
         try:
@@ -866,6 +867,7 @@ def send_message(request):
     return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
+@csrf_protect
 def delete_message(request, message_id):
     message = get_object_or_404(ForumMessage, id=message_id)
     if request.user.role == 'admin' or request.user == message.sender:
@@ -874,6 +876,7 @@ def delete_message(request, message_id):
     return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
 
 @login_required
+@csrf_protect
 def pin_message(request, message_id):
     if request.user.role not in ['admin', 'officer']:
         return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
@@ -1589,12 +1592,21 @@ def event_list(request):
     
     # Filter events based on user role
     if request.user.role == 'member':
-        # Members can only see approved events
-        events = Event.objects.filter(base_query & Q(status='approved'))
+        # Members can only see approved events from their own council or global events
+        events = Event.objects.filter(
+            base_query & 
+            Q(status='approved') & 
+            (Q(council=request.user.council) | Q(is_global=True))
+        )
     elif request.user.role == 'officer':
         # Officers can see approved events and their own pending/rejected events
         events = Event.objects.filter(
             base_query & (Q(status='approved') | Q(created_by=request.user))
+        )
+        
+        # Officers should only see events from their own council or global events
+        events = events.filter(
+            Q(council=request.user.council) | Q(is_global=True)
         )
     else:
         # Admins see only approved events (not rejected or pending)

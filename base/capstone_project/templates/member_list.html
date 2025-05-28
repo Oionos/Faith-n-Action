@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             </div>
                             
-                            <h4>${data.first_name} ${data.middle_name ? data.middle_name + ' ' : ''}${data.last_name} ${data.suffix || ''}</h4>
+                            <h4>${data.first_name} ${data.second_name ? data.second_name + ' ' : ''}${data.middle_name ? data.middle_name + ' ' : ''}${data.last_name} ${data.suffix || ''}</h4>
                             <span class="role-badge role-${data.role}">${data.role_display}</span>
                             
                             <div class="detail-group">
@@ -631,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                             
                             <div class="detail-group">
-                                <strong>Member Since:</strong>
+                                <strong>Date Registered:</strong>
                                 <p>${data.date_joined}</p>
                             </div>
                         </div>

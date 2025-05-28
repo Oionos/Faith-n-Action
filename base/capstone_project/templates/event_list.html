@@ -82,6 +82,11 @@ Knights of Columbus - Event List
                     <i class="fas fa-calendar-day"></i> Today's Event
                 </div>
                 {% endif %}
+                {% if event.is_global %}
+                <div class="global-badge">
+                    <i class="fas fa-globe"></i> Global Event
+                </div>
+                {% endif %}
                 <div class="event-header">
                     <h3 {% if event.status == 'rejected' %}class="rejected-title"{% endif %}>{{ event.name }}</h3>
                     <span class="status-badge status-{{ event.status }}">{{ event.get_status_display }}</span>
@@ -572,6 +577,21 @@ Knights of Columbus - Event List
     gap: 0.5rem;
 }
 
+.global-badge {
+    position: absolute;
+    top: -10px;
+    right: 200px;
+    background-color: #f4b41a;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .modal-body {
     padding: 1.5rem;
 }
@@ -722,6 +742,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="detail-group">
                                 <strong>Status:</strong>
                                 <span class="status-badge status-${data.status}">${data.status_display}</span>
+                            </div>
+                            
+                            <div class="detail-group">
+                                <strong>Event Type:</strong>
+                                <p>${data.is_global ? '<span class="global-tag"><i class="fas fa-globe"></i> Global Event</span>' : 'Council-specific Event'}</p>
                             </div>
                             
                             <div class="detail-group">

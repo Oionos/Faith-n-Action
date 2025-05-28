@@ -766,8 +766,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Track attendance changes
     const attendanceCheckboxes = document.querySelectorAll('.attendance-check');
-    let presentCount = parseInt("{{ present_count }}");
     const totalMembers = parseInt("{{ members|length }}");
+    
+    // Count actually checked checkboxes on page load
+    let presentCount = 0;
+    attendanceCheckboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            presentCount++;
+        }
+    });
+    
+    // Update the initial counts based on actual checkbox state
+    document.getElementById('presentCount').textContent = presentCount;
+    document.getElementById('absentCount').textContent = Math.max(0, totalMembers - presentCount);
     
     attendanceCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
@@ -778,9 +789,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 presentCount--;
             }
             
+            // Ensure presentCount doesn't exceed totalMembers
+            presentCount = Math.min(presentCount, totalMembers);
+            
             // Update the displayed counts
             document.getElementById('presentCount').textContent = presentCount;
-            document.getElementById('absentCount').textContent = totalMembers - presentCount;
+            document.getElementById('absentCount').textContent = Math.max(0, totalMembers - presentCount);
         });
     });
     
@@ -916,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.status === 'success') {
                     // Update the attendance counts with server data
                     document.getElementById('presentCount').textContent = data.present_count;
-                    document.getElementById('absentCount').textContent = data.total_count - data.present_count;
+                    document.getElementById('absentCount').textContent = Math.max(0, data.total_count - data.present_count);
                     presentCount = data.present_count;
                     
                     console.log('Showing success notification');

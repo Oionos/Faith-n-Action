@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block content %}
+{% csrf_token %}
 <div class="forum-container">
     <!-- Mobile hamburger menu button -->
     <button class="mobile-nav-toggle">
@@ -1299,6 +1300,9 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('content', content);
         formData.append('forum_type', currentForumType);
         
+        // Get CSRF token from the template
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
         if (selectedImage) {
             formData.append('image', selectedImage);
         }
@@ -1306,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/forum/send/', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': csrfToken
             },
             body: formData
         })
@@ -1372,10 +1376,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function deleteMessage(messageId, messageElement) {
+        // Get CSRF token from the template
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
         fetch(`/forum/delete/${messageId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': csrfToken
             }
         })
         .then(response => response.json())
@@ -1406,10 +1413,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function togglePin(messageId) {
+        // Get CSRF token from the template
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
         fetch(`/forum/pin/${messageId}/`, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': csrfToken
             }
         })
         .then(response => response.json())
