@@ -18,18 +18,42 @@ body {
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding: 0 2rem;
+    padding: 0 1rem;
     background: var(--navbar-color);
     position: relative;
 }
 
 .logo {
     margin-right: auto;
+    display: flex;
+    align-items: center;
+}
+
+.logo a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
 }
 
 .logo img {
-    height: 15vh;
+    height: 10.8vh;
     width: auto;
+}
+
+.logo-text {
+    margin-left: 10px;
+    font-family: 'Cardo', serif;
+}
+
+.logo-text h3 {
+    margin: 0;
+    font-size: x-large;
+    color: #f4b41a;
+}
+
+.logo-text p {
+    margin: 0;
+    color: #F0F1F6;
 }
 
 /* Navigation Container for logged-in users */
@@ -51,11 +75,11 @@ nav ul {
 }
 
 nav a.active {
-    color: var(--heading-color);
+    color: #f4b41a;
 }
 
 nav a:hover {
-    color: var(--heading-color);
+    color: #f4b41a;
 }
 
 nav a {
@@ -180,11 +204,12 @@ nav a {
     padding: 0.75rem 1.5rem;
     color: var(--dropdown-text);
     text-decoration: none;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .dropdown-menu a:hover {
-    background-color: rgba(3, 13, 78, 0.1);
+    background-color: rgba(244, 180, 26, 0.1);
+    color: #f4b41a;
 }
 
 .dropdown-menu i {
@@ -192,6 +217,10 @@ nav a {
     width: 20px;
     text-align: center;
     color: var(--navbar-color);
+}
+
+.dropdown-menu a:hover i {
+    color: #f4b41a;
 }
 
 .user-info {

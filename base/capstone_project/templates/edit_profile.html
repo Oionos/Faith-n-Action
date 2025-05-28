@@ -8,15 +8,7 @@ Knights of Columbus - Edit Profile
 <link rel="stylesheet" href="{% static 'css/edit_profile.css' %}?v={% now 'U' %}">
 <div class="container">
     <h1>Edit Your Profile</h1>
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == 'success' %}
-                <p class="message success-message">{{ message }}</p>
-            {% elif message.tags == 'error' %}
-                <p class="message error-message">{{ message }}</p>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+    <!-- Messages block removed - now using popup notifications from base.html -->
 
     <!-- Form Section -->
     <form method="post" enctype="multipart/form-data" id="profileForm" onsubmit="return validateForm()">

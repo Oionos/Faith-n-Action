@@ -59,7 +59,7 @@
     <!-- FONT SECTION -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     
     <!-- CSS SECTION -->
@@ -75,11 +75,11 @@
             </button>
             <div class="logo">
                 <a href="{% url 'capstone_project' %}">
-                    <img src="{% static 'images/new_logo.png' %}" alt="Knights of Columbus Logo">
-                    <!-- <div class="logo-text">
+                    <img src="{% static 'images/main-logo.png' %}" alt="Knights of Columbus Logo">
+                    <div class="logo-text">
                         <h3>Diocese of Lucena</h3>
                         <p>District L61</p>
-                    </div> -->
+                    </div>
                 </a>
             </div>
             <nav>
@@ -101,7 +101,11 @@
             </button>
             <div class="logo">
                 <a href="{% url 'dashboard' %}">
-                    <img src="{% static 'images/new_logo.png' %}" alt="Knights of Columbus Logo">
+                    <img src="{% static 'images/main-logo.png' %}" alt="Knights of Columbus Logo">
+                    <div class="logo-text">
+                        <h3>Diocese of Lucena</h3>
+                        <p>District L61</p>
+                    </div>
                 </a>
             </div>
             <div class="nav-container">
@@ -131,7 +135,6 @@
                                 <li><a href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
                                 <li><a href="{% url 'review_manual_donations' %}"><i class="fas fa-file-invoice"></i>Review Donations</a></li>
                                 <li><a href="{% url 'analytics_view' %}"><i class="fas fa-chart-line"></i>View Analytics</a></li>
-                                <li><a href="/admin/capstone_project/user/"><i class="fas fa-users-cog"></i>Manage Users</a></li>
                                 <li><a href="{% url 'archived_users' %}"><i class="fas fa-archive"></i>View Archived Users</a></li>
                             {% elif user.role == 'officer' %}
                                 <li><a href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
@@ -234,5 +237,11 @@
             });
         });
     </script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

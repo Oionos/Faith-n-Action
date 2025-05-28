@@ -532,6 +532,8 @@ class Recruitment(models.Model):
     recruiter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recruitments')
     recruited = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recruited_by')
     date_recruited = models.DateField(default=timezone.now)
+    is_manual = models.BooleanField(default=False)  # True if manually added by admin
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='added_recruitments')
     
     class Meta:
         unique_together = ('recruiter', 'recruited')

@@ -92,36 +92,48 @@ Knights of Columbus - My Recruits
         <div class="members-list">
             {% for recruitment in recruitments %}
             <div class="member-item">
-                <div class="member-header">
-                    <div class="member-name-section">
+                <div class="member-info">
+                    <div class="member-avatar">
                         {% if recruitment.recruited.profile_picture %}
-                            <img src="{{ recruitment.recruited.profile_picture.url }}" alt="Profile Picture" class="member-pic">
+                            <img src="{{ recruitment.recruited.profile_picture.url }}" alt="Profile Picture">
                         {% else %}
-                            <div class="member-pic">
+                            <div class="default-avatar">
                                 <i class="fas fa-user"></i>
                             </div>
                         {% endif %}
-                        <div>
+                    </div>
+                    <div class="member-content">
+                        <div class="member-name">
                             <h3>{{ recruitment.recruited.first_name }} {{ recruitment.recruited.last_name }}</h3>
-                            <span class="role-badge role-{{ recruitment.recruited.role }}">{{ recruitment.recruited.get_role_display }}</span>
-                            {% if recruitment.recruited.current_degree %}
-                            <span class="degree-badge degree-{{ recruitment.recruited.current_degree }}">{{ recruitment.recruited.get_current_degree_display }}</span>
-                            {% endif %}
+                            <div class="member-badges">
+                                <span class="role-badge role-{{ recruitment.recruited.role }}">{{ recruitment.recruited.get_role_display }}</span>
+                                {% if recruitment.recruited.current_degree %}
+                                <span class="degree-badge degree-{{ recruitment.recruited.current_degree }}">{{ recruitment.recruited.get_current_degree_display }}</span>
+                                {% endif %}
+                            </div>
                         </div>
-                    </div>
-                    <!-- <div class="recruitment-date">
-                        <i class="fas fa-calendar-alt"></i> {{ recruitment.date_recruited|date:"F j, Y" }}
-                    </div> -->
-                </div>
-                
-                <div class="member-details">
-                    <div class="detail-column">
-                        <p><strong>Username:</strong> {{ recruitment.recruited.username }}</p>
-                        <p><strong>Email:</strong> {{ recruitment.recruited.email }}</p>
-                    </div>
-                    <div class="detail-column">
-                        <p><strong>Council:</strong> {{ recruitment.recruited.council.name|default:"Not assigned" }}</p>
-                        <p><strong>Date Registered:</strong> {{ recruitment.recruited.date_joined|date:"F j, Y" }}</p>
+                        <div class="member-details">
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <span class="detail-label">Username:</span>
+                                    <span class="detail-value">{{ recruitment.recruited.username }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Email:</span>
+                                    <span class="detail-value">{{ recruitment.recruited.email }}</span>
+                                </div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-item">
+                                    <span class="detail-label">Council:</span>
+                                    <span class="detail-value">{{ recruitment.recruited.council.name|default:"Not assigned" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Date Registered:</span>
+                                    <span class="detail-value">{{ recruitment.recruited.date_joined|date:"F j, Y" }}</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,6 +149,51 @@ Knights of Columbus - My Recruits
 </div>
 
 <style>
+    /* Fix for horizontal overflow */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+    
+    .dashboard-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+    
+    .content-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+    }
+    
+    /* Email and long text handling */
+    .detail-value {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .dashboard-header h1 {
+        margin: 0;
+    }
+    
+    .dashboard-header div {
+        display: flex;
+        gap: 1rem;
+    }
+    
     .degree-progress-container {
         background-color: white;
         border-radius: var(--border-radius);
@@ -158,21 +215,29 @@ Knights of Columbus - My Recruits
         display: flex;
         gap: 1rem;
         flex-wrap: wrap;
+        align-items: center;
     }
     
     .stat-card {
         background-color: #f8f9fa;
         border-radius: var(--border-radius);
-        padding: 1rem;
+        padding: 1.5rem;
         text-align: center;
         min-width: 120px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
     
     .stat-value {
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: bold;
         color: var(--primary-color);
+        line-height: 1;
     }
     
     .stat-label {
@@ -242,17 +307,143 @@ Knights of Columbus - My Recruits
     
     .section-header {
         margin: 2rem 0 1rem;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.5rem;
     }
     
-    .recruitment-date {
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: var(--primary-color);
+    }
+    
+    /* New member item styles */
+    .members-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .member-item {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .member-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .member-info {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .member-avatar {
+        flex-shrink: 0;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid #e9ecef;
+    }
+    
+    .member-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .default-avatar {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #e9ecef;
         color: #6c757d;
-        font-size: 0.9rem;
+    }
+    
+    .default-avatar i {
+        font-size: 1.5rem;
+    }
+    
+    .member-content {
+        flex: 1;
+    }
+    
+    .member-name {
+        margin-bottom: 0.5rem;
+    }
+    
+    .member-name h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--primary-color);
+    }
+    
+    .member-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .role-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background-color: #0D3471;
+        color: white;
+    }
+    
+    .role-member {
+        background-color: #28a745;
+    }
+    
+    .role-officer {
+        background-color: #17a2b8;
+    }
+    
+    .role-admin {
+        background-color: #dc3545;
+    }
+    
+    .member-details {
+        margin-top: 0.75rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+    }
+    
+    .detail-label {
+        font-size: 0.8rem;
+        color: #6c757d;
     }
     
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
         color: #6c757d;
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
     
     .empty-state i {
@@ -261,13 +452,95 @@ Knights of Columbus - My Recruits
         color: #adb5bd;
     }
     
-    @media (max-width: 768px) {
+    /* Responsive styles */
+    @media (max-width: 992px) {
         .degree-progress-container {
             flex-direction: column;
         }
         
         .stats-container {
+            justify-content: flex-start;
+            margin-top: 1rem;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .dashboard-header div {
+            align-self: flex-end;
+        }
+        
+        .member-info {
+            flex-direction: column;
+        }
+        
+        .member-avatar {
+            align-self: center;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .member-content {
+            width: 100%;
+        }
+        
+        .member-name {
+            text-align: center;
+        }
+        
+        .member-badges {
             justify-content: center;
+        }
+        
+        .detail-row {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .detail-item {
+            min-width: auto;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .dashboard-container {
+            padding: 0.5rem;
+        }
+        
+        .content-card {
+            padding: 1rem;
+        }
+        
+        .member-item {
+            padding: 0.75rem;
+        }
+        
+        .detail-item {
+            max-width: 100%;
+        }
+        
+        .dashboard-header div {
+            flex-direction: column;
+            align-self: stretch;
+        }
+        
+        .dashboard-header .dashboard-btn {
+            width: 100%;
+            text-align: center;
+        }
+        
+        .stats-container {
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .stat-card {
+            width: 100%;
         }
     }
 </style>

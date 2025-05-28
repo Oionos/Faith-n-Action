@@ -18,16 +18,6 @@ Knights of Columbus - Manage Roles
             </div>
         </div>
 
-        {% if messages %}
-        <div class="message-container">
-            {% for message in messages %}
-            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         <div class="role-search-filter">
             <input type="text" id="userSearchInput" placeholder="Search users by name, email, or council..." class="role-search-input">
         </div>

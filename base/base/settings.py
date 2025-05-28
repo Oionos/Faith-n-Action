@@ -158,6 +158,9 @@ PAYMONGO_SECRET_KEY = config('PAYMONGO_SECRET_KEY', default='')  # Rename and ad
 # Security settings for production
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 28800  # 8 hours (was 20 minutes)
+SESSION_SAVE_EVERY_REQUEST = True  # Save the session on every request
+CSRF_COOKIE_AGE = 28800  # Match session cookie age
+CSRF_USE_SESSIONS = True  # Store CSRF token in the session instead of cookie
 SECURE_SSL_REDIRECT = False  # Set to True in production
 SESSION_COOKIE_SECURE = False  # Set to True in production
 CSRF_COOKIE_SECURE = False  # Set to True in production

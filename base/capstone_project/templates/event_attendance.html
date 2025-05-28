@@ -13,7 +13,7 @@ Knights of Columbus - Event Attendance
         <div class="dashboard-header">
             <h1>Event Attendance</h1>
             <div class="header-actions">
-                <a href="{% url 'event_list' %}" class="dashboard-btn secondary back-btn">
+                <a href="{% url 'council_events' %}" class="dashboard-btn secondary back-btn">
                     <i class="fas fa-arrow-left"></i> Back to Events
                 </a>
             </div>
@@ -166,12 +166,14 @@ Knights of Columbus - Event Attendance
     </div>
 </div>
 
-<div id="notification" class="notification">
+<div id="notification" class="notification" role="alert" aria-live="assertive">
     <div class="notification-content">
         <i class="fas fa-check-circle success-icon"></i>
         <span id="notification-message">Attendance updated successfully</span>
     </div>
-    <button id="closeNotification" class="close-notification"><i class="fas fa-times"></i></button>
+    <button id="closeNotification" class="close-notification" aria-label="Close notification">
+        <i class="fas fa-times"></i>
+    </button>
 </div>
 
 <!-- Confirmation Modal -->
@@ -203,12 +205,12 @@ Knights of Columbus - Event Attendance
 }
 
 .alert-message {
-    background-color: #fff3cd;
-    color: #856404;
+    background-color: #e6eaf5;
+    color: #030D4E;
     padding: 1rem;
     border-radius: var(--border-radius);
     margin-bottom: 1.5rem;
-    border: 1px solid #ffeeba;
+    border: 1px solid #d1d9f0;
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -450,7 +452,7 @@ Knights of Columbus - Event Attendance
 }
 
 .attendance-checkbox input:checked ~ .checkmark {
-    background-color: var(--primary-bg);
+    background-color: #030D4E;
 }
 
 .attendance-checkbox input:disabled ~ .checkmark {
@@ -493,24 +495,28 @@ Knights of Columbus - Event Attendance
     position: fixed;
     top: 20px;
     right: 20px;
-    background-color: #28a745;
+    background-color: #030D4E;
     color: white;
     padding: 1rem 1.5rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    z-index: 1000;
+    z-index: 9999;
     max-width: 350px;
     transform: translateX(400px);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s ease;
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .notification.show {
     transform: translateX(0);
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .notification-content {
@@ -625,6 +631,34 @@ Knights of Columbus - Event Attendance
     background-color: #6c757d;
 }
 
+.dashboard-btn {
+    background-color: #030D4E;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.dashboard-btn:hover {
+    background-color: #f4b41a;
+    transform: translateY(-2px);
+}
+
+.dashboard-btn.secondary {
+    background-color: #6c757d;
+}
+
+.dashboard-btn.secondary:hover {
+    background-color: #f4b41a;
+}
+
 @media (max-width: 768px) {
     .attendance-container {
         flex-direction: column;
@@ -683,6 +717,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchMembers');
     const clearButton = document.getElementById('clearSearch');
     const memberRows = document.querySelectorAll('.member-row');
+    
+    // For debugging - manually test notification
+    window.testNotification = function() {
+        console.log('Test notification triggered');
+        showNotification('Test notification', 'success');
+    };
     
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -779,8 +819,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to show notification
     function showNotification(message, type = 'success') {
         const notification = document.getElementById('notification');
+        if (!notification) {
+            console.error('Notification element not found');
+            return;
+        }
+        
         const notificationMessage = document.getElementById('notification-message');
         const notificationIcon = notification.querySelector('.notification-content i');
+        
+        console.log('Showing notification:', message, type);
         
         // Set notification color based on type
         if (type === 'success') {
@@ -794,12 +841,23 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationIcon.className = 'fas fa-exclamation-triangle';
         }
         
+        // Update message text
         notificationMessage.textContent = message;
+        
+        // Remove existing show class if present
+        notification.classList.remove('show');
+        
+        // Force a reflow to ensure animation works
+        void notification.offsetWidth;
+        
+        // Add show class to display notification
         notification.classList.add('show');
+        console.log('Added show class to notification');
         
         // Auto-hide notification after 4 seconds
         setTimeout(() => {
             notification.classList.remove('show');
+            console.log('Removed show class from notification');
         }, 4000);
     }
     
@@ -861,6 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('absentCount').textContent = data.total_count - data.present_count;
                     presentCount = data.present_count;
                     
+                    console.log('Showing success notification');
                     // Show success notification
                     showNotification(`Attendance saved successfully! ${data.present_count} members marked present.`, 'success');
                 } else {

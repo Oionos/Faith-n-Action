@@ -15,6 +15,7 @@ main {
     width: 34vh;
     height: 34vh;
     border-radius: 50%;
+    background-color: #1b203e;
     display: flex;
     justify-content: center;
     align-items: center;

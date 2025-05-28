@@ -12,22 +12,14 @@ Knights of Columbus - Councils
         <p>Councils</p>
 
         <div class="councils-grid">
-            <div class="council">
-                <img src="{% static 'images/kofc-logo.png' %}" alt="Council Logo">
-                <p>Council 3469</p>
-            </div>
-            <div class="council">
-                <img src="{% static 'images/kofc-logo.png' %}" alt="Council Logo">
-                <p>Council 18035</p>
-            </div>
-            <div class="council">
-                <img src="{% static 'images/kofc-logo.png' %}" alt="Council Logo">
-                <p>Council 1234</p>
-            </div>
-            <div class="council">
-                <img src="{% static 'images/kofc-logo.png' %}" alt="Council Logo">
-                <p>Council 6789</p>
-            </div>
+            {% for council in councils %}
+            <a href="{% url 'council_detail' council_id=council.id %}" class="council-link">
+                <div class="council">
+                    <img src="{% static 'images/kofc-logo.png' %}" alt="Council Logo">
+                    <p>{{ council.name }}</p>
+                </div>
+            </a>
+            {% endfor %}
         </div>
     </main>
 </body>

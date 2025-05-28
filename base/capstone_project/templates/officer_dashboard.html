@@ -70,6 +70,9 @@ Knights of Columbus - Officer Dashboard
                     <p>Officer - {{ user.council.name }}</p>
                     <!-- <p>Member Since: {{ user.date_joined|date:"F j, Y" }}</p> -->
                     <p>Degree: <span class="degree-badge degree-{{ user.current_degree|default:'1st' }}">{{ user.get_current_degree_display }}</span></p>
+                    {% if user.recruiter_name and not user.voluntary_join %}
+                        <p>Recruited By: {{ user.recruiter_name }}</p>
+                    {% endif %}
                     <div class="action-buttons">
                         <a href="{% url 'edit_profile' %}" class="dashboard-btn">
                             <i class="fas fa-user-edit"></i>Edit Profile
@@ -104,8 +107,8 @@ Knights of Columbus - Officer Dashboard
                     </div>
                     <div class="summary-content">
                         <h3>Event Management</h3>
-                        <div class="summary-count">{{ events|length }}</div>
-                        <p class="summary-label">Upcoming Events</p>
+                        <div class="summary-count">{{ approved_events_count }}</div>
+                        <p class="summary-label">Approved Events</p>
                     </div>
                 </div>
                 <div class="action-buttons">
@@ -132,7 +135,7 @@ Knights of Columbus - Officer Dashboard
                         </div>
                         <div>
                             <p class="stat-description">Events This Month</p>
-                            <div class="stat-value">{{ events|length }}</div>
+                            <div class="stat-value">{{ approved_events_count }}</div>
                         </div>
                         <div>
                             <p class="stat-description">Total Donations</p>

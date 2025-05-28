@@ -19,36 +19,28 @@ Knights of Columbus - Add Recruitment Record
             </div>
         </div>
         
-        {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-            <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        
         <div class="form-container">
             <form method="post" action="{% url 'add_recruitment' %}">
                 {% csrf_token %}
                 
                 <div class="form-group">
                     <label for="recruiter_id">Recruiter:</label>
-                    <select name="recruiter_id" id="recruiter_id" class="form-control" required>
+                    <select name="recruiter_id" id="recruiter_id" class="form-control user-select" required>
                         <option value="">-- Select Recruiter --</option>
                         {% for user in users %}
-                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</option>
+                        <option value="{{ user.id }}" data-img="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}{% static 'images/default-profile.png' %}{% endif %}" data-council="{{ user.council.name|default:'No Council' }}" data-second-name="{{ user.first_name }} {{ user.second_name }} {{ user.last_name }}">
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="recruit_id">Recruit:</label>
-                    <select name="recruit_id" id="recruit_id" class="form-control" required>
+                    <select name="recruit_id" id="recruit_id" class="form-control user-select" required>
                         <option value="">-- Select Recruit --</option>
                         {% for user in users %}
-                        <option value="{{ user.id }}">{{ user.first_name }} {{ user.last_name }} ({{ user.username }})</option>
+                        <option value="{{ user.id }}" data-img="{% if user.profile_picture %}{{ user.profile_picture.url }}{% else %}{% static 'images/default-profile.png' %}{% endif %}" data-council="{{ user.council.name|default:'No Council' }}" data-second-name="{{ user.first_name }} {{ user.second_name }} {{ user.last_name }}">
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -60,6 +52,78 @@ Knights of Columbus - Add Recruitment Record
                 </div>
             </form>
         </div>
+        
+        <div class="history-section">
+            <h2>Recruitment History</h2>
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Recruiter</th>
+                        <th>Recruit</th>
+                        <th>Date</th>
+                        <th>Source</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in all_recruitments %}
+                    <tr>
+                        <td data-user-id="{{ record.recruiter.id }}">
+                            {% if record.recruiter.profile_picture %}
+                            <img src="{{ record.recruiter.profile_picture.url }}" alt="{{ record.recruiter.first_name }}" class="profile-pic-small">
+                            {% else %}
+                            <img src="{% static 'images/default-profile.png' %}" alt="{{ record.recruiter.first_name }}" class="profile-pic-small">
+                            {% endif %}
+                            {{ record.recruiter.first_name }} {{ record.recruiter.last_name }}
+                        </td>
+                        <td data-user-id="{{ record.recruited.id }}">
+                            {% if record.recruited.profile_picture %}
+                            <img src="{{ record.recruited.profile_picture.url }}" alt="{{ record.recruited.first_name }}" class="profile-pic-small">
+                            {% else %}
+                            <img src="{% static 'images/default-profile.png' %}" alt="{{ record.recruited.first_name }}" class="profile-pic-small">
+                            {% endif %}
+                            {{ record.recruited.first_name }} {{ record.recruited.last_name }}
+                        </td>
+                        <td>{{ record.date_recruited|date:"M d, Y" }}</td>
+                        <td>
+                            {% if record.is_manual %}
+                            <span class="badge manual">Manual</span>
+                            {% else %}
+                            <span class="badge system">System</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if record.is_manual %}
+                            <button type="button" class="undo-btn" data-id="{{ record.id }}" data-recruiter="{{ record.recruiter.first_name }} {{ record.recruiter.last_name }}" data-recruit="{{ record.recruited.first_name }} {{ record.recruited.last_name }}">
+                                <i class="fas fa-undo"></i> Undo
+                            </button>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Confirm Undo</h2>
+        <p>Are you sure you want to undo this recruitment record?</p>
+        <p><strong>Recruiter:</strong> <span id="recruiterName"></span></p>
+        <p><strong>Recruit:</strong> <span id="recruitName"></span></p>
+        <div class="modal-actions">
+            <form id="undoForm" method="post" action="">
+                {% csrf_token %}
+                <button type="submit" class="dashboard-btn danger">Yes, Undo</button>
+                <button type="button" class="dashboard-btn secondary cancel-btn">Cancel</button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -67,6 +131,13 @@ Knights of Columbus - Add Recruitment Record
     .form-container {
         max-width: 600px;
         margin: 0 auto;
+    }
+    
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
     }
     
     .form-group {
@@ -126,10 +197,427 @@ Knights of Columbus - Add Recruitment Record
     .back-btn {
         margin-bottom: 1rem;
     }
+    
+    /* Profile picture in select options */
+    .profile-pic-small {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    
+    /* Custom select styling */
+    .user-select {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
+    
+    .custom-select-wrapper {
+        position: relative;
+        width: 100%;
+    }
+    
+    .custom-select {
+        position: relative;
+        width: 100%;
+        border: 1px solid rgba(13, 52, 113, 0.2);
+        border-radius: var(--border-radius);
+        cursor: pointer;
+    }
+    
+    .selected-option {
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        background-color: white;
+        border-radius: var(--border-radius);
+        position: relative;
+    }
+    
+    .selected-option::after {
+        content: '';
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #333;
+    }
+    
+    .select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: white;
+        border: 1px solid rgba(13, 52, 113, 0.2);
+        border-top: none;
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 100;
+        display: none;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .custom-select.open .select-dropdown {
+        display: block;
+    }
+    
+    .select-option {
+        padding: 0.75rem;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .select-option:hover {
+        background-color: rgba(13, 52, 113, 0.05);
+    }
+    
+    .select-option.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f5f5f5;
+    }
+    
+    .option-text {
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+    
+    /* Enhanced select option styling */
+    select.user-select option {
+        padding: 8px;
+        display: flex;
+        align-items: center;
+    }
+    
+    /* Firefox specific styling */
+    @-moz-document url-prefix() {
+        select.user-select {
+            text-indent: 0.01px;
+            text-overflow: '';
+            padding-right: 1rem;
+        }
+    }
+    
+    /* Webkit browsers (Chrome, Safari) */
+    @media screen and (-webkit-min-device-pixel-ratio:0) {
+        select.user-select {
+            padding-right: 2.5rem;
+        }
+    }
+    
+    /* IE10+ specific styles */
+    @media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+        select.user-select {
+            padding-right: 2rem;
+            background-image: none;
+        }
+    }
+    
+    /* Council badge */
+    .council-badge {
+        font-size: 0.75rem;
+        color: #6c757d;
+        background-color: #e9ecef;
+        padding: 0.1rem 0.5rem;
+        border-radius: 10px;
+        margin-left: 0.5rem;
+    }
+    
+    /* History section styles */
+    .history-section {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(13, 52, 113, 0.2);
+    }
+    
+    .history-section h2 {
+        margin-bottom: 1.5rem;
+        color: var(--heading-color);
+        text-align: left;
+        font-size: 1.5rem;
+    }
+    
+    .history-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    
+    .history-table th,
+    .history-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid rgba(13, 52, 113, 0.1);
+    }
+    
+    .history-table th {
+        background-color: rgba(13, 52, 113, 0.05);
+        font-weight: 600;
+        color: var(--heading-color);
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+    
+    .badge.system {
+        background-color: #e9ecef;
+        color: #495057;
+    }
+    
+    .badge.manual {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+    
+    .undo-btn {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: none;
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    .undo-btn:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    /* Modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-content {
+        background-color: white;
+        margin: 15% auto;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        width: 80%;
+        max-width: 500px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        position: relative;
+    }
+    
+    .close {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        color: #aaa;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .close:hover {
+        color: black;
+    }
+    
+    .modal-actions {
+        margin-top: 2rem;
+        text-align: right;
+    }
+    
+    .modal-actions button {
+        margin-left: 0.5rem;
+    }
+    
+    .danger {
+        background-color: #dc3545;
+    }
+    
+    .danger:hover {
+        background-color: #c82333;
+    }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Create custom select dropdowns with profile pictures
+        function createCustomDropdowns() {
+            // Get all select elements with class 'user-select'
+            const selects = document.querySelectorAll('.user-select');
+            
+            selects.forEach(select => {
+                // Create wrapper div
+                const wrapper = document.createElement('div');
+                wrapper.className = 'custom-select-wrapper';
+                select.parentNode.insertBefore(wrapper, select);
+                
+                // Move the select inside the wrapper
+                wrapper.appendChild(select);
+                
+                // Create custom select elements
+                const customSelect = document.createElement('div');
+                customSelect.className = 'custom-select';
+                wrapper.appendChild(customSelect);
+                
+                // Create selected display
+                const selectedDisplay = document.createElement('div');
+                selectedDisplay.className = 'selected-option';
+                customSelect.appendChild(selectedDisplay);
+                
+                // Create dropdown
+                const dropdown = document.createElement('div');
+                dropdown.className = 'select-dropdown';
+                customSelect.appendChild(dropdown);
+                
+                // Add options to dropdown
+                const options = select.querySelectorAll('option');
+                options.forEach(option => {
+                    const customOption = document.createElement('div');
+                    customOption.className = 'select-option';
+                    if (option.disabled) {
+                        customOption.classList.add('disabled');
+                    }
+                    
+                    if (option.value) {
+                        const imgUrl = option.getAttribute('data-img');
+                        const council = option.getAttribute('data-council');
+                        const secondName = option.getAttribute('data-second-name');
+                        
+                        // Create full name with second name if available
+                        const firstName = option.textContent.split(' ')[0];
+                        const lastName = option.textContent.split(' ').pop();
+                        const fullName = secondName && secondName.trim() ? 
+                            `${firstName} ${secondName} ${lastName}` : 
+                            `${firstName} ${lastName}`;
+                        
+                        customOption.innerHTML = `
+                            <img src="${imgUrl}" class="profile-pic-small" alt="${fullName}">
+                            <span class="option-text">${fullName}</span>
+                            <span class="council-badge">${council}</span>
+                        `;
+                        customOption.dataset.value = option.value;
+                    } else {
+                        customOption.textContent = option.textContent;
+                    }
+                    
+                    dropdown.appendChild(customOption);
+                    
+                    // Handle option click
+                    customOption.addEventListener('click', () => {
+                        if (customOption.classList.contains('disabled')) return;
+                        
+                        // Update the real select value
+                        select.value = customOption.dataset.value || '';
+                        
+                        // Update the display
+                        updateSelectedDisplay(select, selectedDisplay);
+                        
+                        // Trigger change event on the real select
+                        const event = new Event('change', { bubbles: true });
+                        select.dispatchEvent(event);
+                        
+                        // Close dropdown
+                        customSelect.classList.remove('open');
+                    });
+                });
+                
+                // Initial display update
+                updateSelectedDisplay(select, selectedDisplay);
+                
+                // Toggle dropdown on click
+                selectedDisplay.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    // Close all other dropdowns
+                    document.querySelectorAll('.custom-select.open').forEach(openSelect => {
+                        if (openSelect !== customSelect) {
+                            openSelect.classList.remove('open');
+                        }
+                    });
+                    
+                    customSelect.classList.toggle('open');
+                });
+                
+                // Update display when the select changes
+                select.addEventListener('change', () => {
+                    updateSelectedDisplay(select, selectedDisplay);
+                    
+                    // Update disabled options in dropdown
+                    updateDisabledOptions(select, dropdown);
+                });
+            });
+            
+            // Close all dropdowns when clicking outside
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.custom-select.open').forEach(select => {
+                    select.classList.remove('open');
+                });
+            });
+        }
+        
+        // Update the selected display
+        function updateSelectedDisplay(select, display) {
+            const selectedOption = select.options[select.selectedIndex];
+            
+            if (selectedOption.value) {
+                const imgUrl = selectedOption.getAttribute('data-img');
+                const council = selectedOption.getAttribute('data-council');
+                const secondName = selectedOption.getAttribute('data-second-name');
+                
+                // Create full name with second name if available
+                const firstName = selectedOption.textContent.split(' ')[0];
+                const lastName = selectedOption.textContent.split(' ').pop();
+                const fullName = secondName && secondName.trim() ? 
+                    `${firstName} ${secondName} ${lastName}` : 
+                    `${firstName} ${lastName}`;
+                
+                display.innerHTML = `
+                    <img src="${imgUrl}" class="profile-pic-small" alt="${fullName}">
+                    <span class="option-text">${fullName}</span>
+                    <span class="council-badge">${council}</span>
+                `;
+            } else {
+                display.textContent = selectedOption.textContent;
+            }
+        }
+        
+        // Update disabled options in dropdown
+        function updateDisabledOptions(select, dropdown) {
+            const options = select.querySelectorAll('option');
+            const dropdownOptions = dropdown.querySelectorAll('.select-option');
+            
+            options.forEach((option, index) => {
+                if (option.disabled) {
+                    dropdownOptions[index].classList.add('disabled');
+                } else {
+                    dropdownOptions[index].classList.remove('disabled');
+                }
+            });
+        }
+        
         // Prevent selecting the same user as both recruiter and recruit
         const recruiterSelect = document.getElementById('recruiter_id');
         const recruitSelect = document.getElementById('recruit_id');
@@ -163,13 +651,102 @@ Knights of Columbus - Add Recruitment Record
                     }
                 }
             }
+            
+            // Apply the already-recruited restrictions
+            disableAlreadyRecruitedUsers();
         }
         
+        // Get all recruitment records from the table and disable already recruited users
+        function disableAlreadyRecruitedUsers() {
+            // Get all rows from the recruitment history table
+            const rows = document.querySelectorAll('.history-table tbody tr');
+            const alreadyRecruited = new Set(); // Set to store recruited user IDs
+            
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 2) {
+                    // Get the recruit ID from the data attribute
+                    const recruitCell = cells[1];
+                    
+                    if (recruitCell && recruitCell.hasAttribute('data-user-id')) {
+                        const recruitId = recruitCell.getAttribute('data-user-id');
+                        
+                        // Add the recruit ID to the set of already recruited users
+                        alreadyRecruited.add(recruitId);
+                    }
+                }
+            });
+            
+            // Disable options for recruits that are already recruited
+            for (let option of recruitSelect.options) {
+                if (option.value && alreadyRecruited.has(option.value)) {
+                    option.disabled = true;
+                }
+            }
+            
+            // Update the custom dropdown to reflect these changes
+            const customDropdowns = document.querySelectorAll('.custom-select');
+            customDropdowns.forEach(dropdown => {
+                const select = dropdown.parentNode.querySelector('select');
+                if (select && select.id === 'recruit_id') {
+                    const dropdownOptions = dropdown.querySelectorAll('.select-option');
+                    const options = select.querySelectorAll('option');
+                    
+                    options.forEach((option, index) => {
+                        if (option.disabled && dropdownOptions[index]) {
+                            dropdownOptions[index].classList.add('disabled');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Add event listeners
         recruiterSelect.addEventListener('change', updateSelections);
         recruitSelect.addEventListener('change', updateSelections);
         
-        // Initial update
+        // Call function to create custom dropdowns
+        createCustomDropdowns();
+        
+        // Initial update of selections
         updateSelections();
+        
+        // Modal functionality
+        const modal = document.getElementById('confirmationModal');
+        const undoButtons = document.querySelectorAll('.undo-btn');
+        const closeBtn = document.querySelector('.close');
+        const cancelBtn = document.querySelector('.cancel-btn');
+        const undoForm = document.getElementById('undoForm');
+        const recruiterNameSpan = document.getElementById('recruiterName');
+        const recruitNameSpan = document.getElementById('recruitName');
+        
+        undoButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const historyId = this.getAttribute('data-id');
+                const recruiterName = this.getAttribute('data-recruiter');
+                const recruitName = this.getAttribute('data-recruit');
+                
+                recruiterNameSpan.textContent = recruiterName;
+                recruitNameSpan.textContent = recruitName;
+                undoForm.action = `{% url 'undo_recruitment' 0 %}`.replace('0', historyId);
+                
+                modal.style.display = 'block';
+            });
+        });
+        
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        cancelBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
     });
 </script>
 {% endblock %} 

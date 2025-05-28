@@ -39,6 +39,12 @@ main p {
     margin-bottom: 4rem;
 }
 
+.council-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
 .council {
     background-color: #fff;
     border: 1.8px solid rgba(22, 27, 95, 0.4);

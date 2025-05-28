@@ -24,15 +24,7 @@ Knights of Columbus - Manage Pending Users
             </div>
         </div>
     
-    {% if messages %}
-    <div class="message-container">
-        {% for message in messages %}
-        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    <!-- Messages block removed - now using popup notifications from base.html -->
     
         <!-- Search -->
         <div class="search-container">

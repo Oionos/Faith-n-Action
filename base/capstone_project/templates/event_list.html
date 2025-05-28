@@ -56,7 +56,7 @@ Knights of Columbus - Event List
                 </div>
                 {% endif %}
 
-                <div class="filter-group">
+                <div class="filter-group filter-buttons">
                     <button type="submit" class="dashboard-btn">Apply Filters</button>
                     <a href="{% url 'event_list' %}" class="dashboard-btn secondary">Clear Filters</a>
                 </div>
@@ -181,6 +181,7 @@ Knights of Columbus - Event List
 
 <style>
 /* Dashboard header with actions */
+
 .dashboard-header {
     position: relative;
     padding-bottom: 1rem;
@@ -226,6 +227,14 @@ Knights of Columbus - Event List
     background-color: white;
 }
 
+.filter-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-direction: row;
+    justify-content: flex-start;
+    min-width: auto;
+}
+
 /* Improved search container */
 .search-container {
     margin-bottom: 2rem;
@@ -268,7 +277,7 @@ Knights of Columbus - Event List
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #6c757d;
+    color: #0c1216;
     cursor: pointer;
     display: none;
 }
@@ -343,8 +352,8 @@ Knights of Columbus - Event List
 }
 
 .status-pending {
-    background-color: #ffc107;
-    color: #212529;
+    background-color: #030D4E;
+    color: white;
 }
 
 .status-approved {
@@ -396,12 +405,32 @@ Knights of Columbus - Event List
     margin-top: 2rem;
 }
 
+.dashboard-btn {
+    background-color: #030D4E;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.dashboard-btn:hover {
+    background-color: #f4b41a;
+    transform: translateY(-2px);
+}
+
 .dashboard-btn.secondary {
     background-color: #6c757d;
 }
 
 .dashboard-btn.secondary:hover {
-    background-color: #5a6268;
+    background-color: #f4b41a;
 }
 
 /* Rejected event styles */
@@ -532,7 +561,7 @@ Knights of Columbus - Event List
     position: absolute;
     top: -10px;
     right: 20px;
-    background-color: #28a745;
+    background-color: #030D4E;
     color: white;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
@@ -562,7 +591,7 @@ Knights of Columbus - Event List
 
 .warning-message i {
     font-size: 3rem;
-    color: #ffc107;
+    color: #030D4E;
     margin-bottom: 1.5rem;
 }
 
@@ -574,11 +603,11 @@ Knights of Columbus - Event List
 
 /* Attendance button */
 .attendance-btn {
-    background-color: #28a745;
+    background-color: #030D4E;
 }
 
 .attendance-btn:hover {
-    background-color: #218838;
+    background-color: #f4b41a;
 }
 
 .attendance-btn.disabled {

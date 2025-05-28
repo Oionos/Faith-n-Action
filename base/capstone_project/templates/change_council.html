@@ -24,16 +24,6 @@ Knights of Columbus - Change Council
             </div>
         </div>
 
-        {% if messages %}
-            <div class="messages-container">
-                {% for message in messages %}
-                    <div class="message {% if message.tags %}{{ message.tags }}{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
         <div class="user-info-card">
             <div class="user-header">
                 <div class="user-avatar">

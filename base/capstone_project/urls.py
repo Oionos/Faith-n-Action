@@ -19,6 +19,7 @@ urlpatterns = [
     path('mission_vision/', views.mission_vision, name='mission_vision'),
     path('faith-action/', views.faith_action, name='faith-action'),
     path('councils/', views.councils, name='councils'),
+    path('council/<int:council_id>/', views.council_detail, name='council_detail'),
     path('donations/', views.donations, name='donations'),
     path('about_us/', views.about_us, name='about_us'),
     path('events-management/', views.events_management, name='events_management'),
@@ -77,6 +78,9 @@ urlpatterns = [
     
     # Add Recruitment Record
     path('add-recruitment/', views.add_recruitment, name='add_recruitment'),
+    
+    # Undo Recruitment Change
+    path('undo-recruitment/<int:history_id>/', views.undo_recruitment, name='undo_recruitment'),
     
     # Change Council
     path('change-council/<int:user_id>/', views.change_council, name='change_council'),
