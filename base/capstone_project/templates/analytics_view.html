@@ -1,78 +1,94 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block title %}
 Knights of Columbus - Analytics
 {% endblock %}
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+
 <div class="container">
     <h1>Analytics Overview</h1>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Council</th>
-                <th>Events Count</th>
-                <th>Donations Amount</th>
-                <th>Last Updated</th>
-                <th>Updated By</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for record in analytics %}
-                <tr>
-                    <td>{{ record.council.name }}</td>
-                    <td>{{ record.events_count }}</td>
-                    <td>{{ record.donations_amount }}</td>
-                    <td>{{ record.date_updated }}</td>
-                    <td>{{ record.updated_by.username }}</td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="5">No analytics data available.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="filter-section">
+        <form method="get" action="{% url 'analytics_view' %}">
+            <label for="council_id">Filter by Council:</label>
+            <select name="council_id" id="council_id" onchange="this.form.submit()">
+                <option value="">All Councils</option>
+                {% for council in councils %}
+                    <option value="{{ council.id }}" {% if selected_council == council.id|stringformat:"s" %}selected{% endif %}>
+                        {{ council.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="summary-section">
+        <h2>Summary Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Events</h3>
+                <p>{{ summary_stats.total_events }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Donations (PHP)</h3>
+                <p>{{ summary_stats.total_donations }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Members</h3>
+                <p>{{ summary_stats.total_members }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Officers</h3>
+                <p>{{ summary_stats.total_officers }}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Donation (PHP)</h3>
+                <p>{{ summary_stats.avg_donation|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container" style="grid-area: events;">
+        <h2>Events by Council</h2>
+        <canvas id="eventsChart"></canvas>
+    </div>
+
+    <div class="chart-container" style="grid-area: donations;">
+        <h2>Donations Per Month</h2>
+        <canvas id="donationsChart"></canvas>
+    </div>
+
+    <div class="chart-container" style="grid-area: event-types;">
+        <h2>Event Types Distribution</h2>
+        <canvas id="eventTypesChart"></canvas>
+    </div>
+
+    <div class="chart-container" style="grid-area: members;">
+        <h2>Members and Officers by Council</h2>
+        <canvas id="membersOfficersChart"></canvas>
+    </div>
+
+    <div class="chart-container" style="grid-area: donation-sources;">
+        <h2>Donation Sources</h2>
+        <canvas id="donationSourcesChart"></canvas>
+    </div>
+
+    <div class="chart-container" style="grid-area: member-activity;">
+        <h2>Member Activity</h2>
+        <canvas id="memberActivityChart"></canvas>
+    </div>
+
+    <script id="eventsData" type="application/json">{{ events_data | safe }}</script>
+    <script id="donationsData" type="application/json">{{ donations_data | safe }}</script>
+    <script id="membersOfficersData" type="application/json">{{ members_officers_data | safe }}</script>
+    <script id="eventTypesData" type="application/json">{{ event_types_data | safe }}</script>
+    <script id="donationSourcesData" type="application/json">{{ donation_sources_data | safe }}</script>
+    <script id="memberActivityData" type="application/json">{{ member_activity_data | safe }}</script>
+    <input type="hidden" id="selectedCouncil" value="{{ selected_council|default:'' }}">
 </div>
 
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{% static 'js/analytics.js' %}"></script>
 {% endblock %}
