@@ -84,4 +84,7 @@ urlpatterns = [
     
     # Change Council
     path('change-council/<int:user_id>/', views.change_council, name='change_council'),
+    
+    # Leaderboard
+    path('leaderboard/', views.leaderboard, name='leaderboard'),
 ]

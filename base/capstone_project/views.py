@@ -21,6 +21,8 @@ from django.urls import reverse
 from io import BytesIO
 from datetime import datetime, date, timezone, timedelta
 from base64 import b64encode, b64decode
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 PRIVATE_KEY = getattr(settings, 'PRIVATE_KEY', None)
 PUBLIC_KEY = getattr(settings, 'PUBLIC_KEY', None)
 import base64
@@ -31,11 +33,8 @@ import uuid
 import logging
 import requests
 import json
-<<<<<<< HEAD
 from django.db.models import Q
 from django.core.mail import send_mail
-
-
 
 def load_keys():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,9 +43,8 @@ def load_keys():
     with open(os.path.join(base_dir, 'public_key.pem'), 'rb') as f:
         public_key = serialization.load_pem_public_key(f.read(), backend=default_backend())
     return private_key, public_key
+
 PRIVATE_KEY, PUBLIC_KEY = load_keys()
-=======
->>>>>>> main
 
 logger = logging.getLogger(__name__)
 @receiver(pre_save, sender=Block)
@@ -135,6 +133,13 @@ def sign_in(request):
                     # Initialize last_activity timestamp
                     request.session['last_activity'] = datetime.now().timestamp()
                     request.session.modified = True
+                    
+                    # Check if user is inactive and show warning (only once per session)
+                    if user.is_inactive_member() and not request.session.get('inactive_warning_shown', False):
+                        request.session['inactive_warning_shown'] = True
+                        request.session['show_inactive_warning'] = True
+                        request.session.modified = True
+                    
                     print(f"User {username} logged in successfully, role: {user.role}, redirecting to dashboard")
                     return redirect('dashboard')
             else:
@@ -375,6 +380,7 @@ def dashboard(request):
 def admin_dashboard(request):
     """Dashboard view for admins"""
     from datetime import date
+    from .bible_verses import get_daily_bible_verse
     today = date.today()
     
     user = request.user
@@ -388,14 +394,35 @@ def admin_dashboard(request):
     
     # Count only approved events
     approved_events_count = Event.objects.filter(status='approved', date_from__gte=today).count()
+    
+    # Count pending events for admin dashboard
+    pending_events_count = Event.objects.filter(status='pending', date_from__gte=today).count()
+    
     analytics = Analytics.objects.all()
+    
+    # Calculate user's recruitment count
+    user_recruitment_count = user.recruitments.count()
+    
+    # Count pending users for admin dashboard
+    pending_users_count = User.objects.filter(role='pending', is_archived=False).count()
+    
+    # Get daily Bible verse
+    daily_verse = get_daily_bible_verse()
+    
+    # Check if we need to show inactive warning popup
+    show_inactive_warning = request.session.pop('show_inactive_warning', False)
     
     context = {
         'user': user,
         'user_list': user_list, 
         'events': events, 
         'approved_events_count': approved_events_count,
-        'analytics': analytics
+        'pending_events_count': pending_events_count,
+        'analytics': analytics,
+        'user_recruitment_count': user_recruitment_count,
+        'pending_users_count': pending_users_count,
+        'daily_verse': daily_verse,
+        'show_inactive_warning': show_inactive_warning
     }
     
     return render(request, 'admin_dashboard.html', context)
@@ -403,6 +430,7 @@ def admin_dashboard(request):
 def officer_dashboard(request):
     """Dashboard view for officers"""
     from datetime import date
+    from .bible_verses import get_daily_bible_verse
     today = date.today()
     
     user = request.user
@@ -422,14 +450,42 @@ def officer_dashboard(request):
         (Q(council=user.council) | Q(is_global=True)) & 
         Q(status='approved', date_from__gte=today)
     ).count()
+    
+    # Count pending events for officers
+    pending_events_count = Event.objects.filter(
+        (Q(council=user.council) | Q(is_global=True)) & 
+        Q(status='pending', date_from__gte=today)
+    ).count()
+    
     analytics = Analytics.objects.filter(council=user.council)
+    
+    # Get activities (events attended) for officers too
+    activities_count = EventAttendance.objects.filter(member=user, is_present=True).count()
+    
+    # Calculate user's recruitment count
+    user_recruitment_count = user.recruitments.count()
+    
+    # Count pending users for officer dashboard (only their council)
+    pending_users_count = User.objects.filter(role='pending', council=user.council, is_archived=False).count()
+    
+    # Get daily Bible verse
+    daily_verse = get_daily_bible_verse()
+    
+    # Check if we need to show inactive warning popup
+    show_inactive_warning = request.session.pop('show_inactive_warning', False)
     
     context = {
         'user': user,
         'user_list': user_list, 
         'events': events, 
         'approved_events_count': approved_events_count,
-        'analytics': analytics
+        'pending_events_count': pending_events_count,
+        'analytics': analytics,
+        'activities_count': activities_count,
+        'user_recruitment_count': user_recruitment_count,
+        'pending_users_count': pending_users_count,
+        'daily_verse': daily_verse,
+        'show_inactive_warning': show_inactive_warning
     }
     
     return render(request, 'officer_dashboard.html', context)
@@ -437,6 +493,7 @@ def officer_dashboard(request):
 def member_dashboard(request):
     """Dashboard view for members"""
     from datetime import date
+    from .bible_verses import get_daily_bible_verse
     today = date.today()
     
     user = request.user
@@ -457,6 +514,9 @@ def member_dashboard(request):
     # Get activities (events attended)
     activities_count = EventAttendance.objects.filter(member=user, is_present=True).count()
     
+    # Calculate user's recruitment count
+    user_recruitment_count = user.recruitments.count()
+    
     # Get council announcements
     announcements = []
     council_updates = []
@@ -467,6 +527,12 @@ def member_dashboard(request):
     # Get forum messages
     forum_messages = ForumMessage.objects.all().order_by('-timestamp')[:5]
     
+    # Get daily Bible verse
+    daily_verse = get_daily_bible_verse()
+    
+    # Check if we need to show inactive warning popup
+    show_inactive_warning = request.session.pop('show_inactive_warning', False)
+    
     context = {
         'user': user,
         'events': events, 
@@ -475,6 +541,9 @@ def member_dashboard(request):
         'announcements': announcements,
         'forum_messages': forum_messages,
         'council_updates': council_updates,
+        'user_recruitment_count': user_recruitment_count,
+        'daily_verse': daily_verse,
+        'show_inactive_warning': show_inactive_warning
     }
     
     return render(request, 'member_dashboard.html', context)
@@ -662,11 +731,16 @@ def archived_users(request):
 @never_cache
 @login_required
 def analytics_view(request):
-    if request.user.role != 'admin':
+    if request.user.role not in ['admin', 'officer']:
         return redirect('dashboard')
     
-    council_id = request.GET.get('council_id')
-    councils = Council.objects.all()
+    # Admin can select any council, officers are restricted to their own council
+    if request.user.role == 'officer':
+        council_id = str(request.user.council.id) if request.user.council else None
+        councils = Council.objects.filter(id=council_id) if council_id else Council.objects.none()
+    else:  # Admin
+        council_id = request.GET.get('council_id')
+        councils = Council.objects.all()
 
     # 1. Events Done Data
     events_qs = Event.objects.filter(status='approved')
@@ -774,6 +848,7 @@ def analytics_view(request):
         'donation_sources_data': json.dumps(donation_sources_data),
         'member_activity_data': json.dumps(member_activity_data),
         'summary_stats': summary_stats,
+        'is_officer': request.user.role == 'officer'
     }
     return render(request, 'analytics_view.html', context)
 @never_cache
@@ -1052,6 +1127,7 @@ def add_event(request):
         name = request.POST.get('name')
         description = request.POST.get('description')
         category = request.POST.get('category')
+        subcategory = request.POST.get('subcategory')
         street = request.POST.get('street')
         barangay = request.POST.get('barangay')
         city = request.POST.get('city')
@@ -1093,6 +1169,7 @@ def add_event(request):
                 name=name,
                 description=description,
                 category=category,
+                subcategory=subcategory,
                 council=council,
                 is_global=is_global,
                 street=street,
@@ -1138,6 +1215,7 @@ def edit_event(request, event_id):
         event.name = request.POST.get('name')
         event.description = request.POST.get('description')
         event.category = request.POST.get('category')
+        event.subcategory = request.POST.get('subcategory')
         event.street = request.POST.get('street')
         event.barangay = request.POST.get('barangay')
         event.city = request.POST.get('city')
@@ -1229,9 +1307,22 @@ def reject_event(request, event_id):
     
     if event.status == 'pending':
         if request.method == 'POST':
-            rejection_reason = request.POST.get('rejection_reason', '')
+            rejection_category = request.POST.get('rejection_category', '')
+            custom_reason = request.POST.get('custom_reason', '')
+            additional_notes = request.POST.get('additional_notes', '')
+            
+            # Build the final rejection reason
+            if rejection_category == 'Others':
+                final_reason = f"Others: {custom_reason}"
+            else:
+                final_reason = rejection_category
+            
+            # Add additional notes if provided
+            if additional_notes:
+                final_reason += f"\n\nAdditional Notes: {additional_notes}"
+            
             event.status = 'rejected'
-            event.rejection_reason = rejection_reason
+            event.rejection_reason = final_reason
             event.save()
             messages.success(request, f'Event "{event.name}" has been rejected.')
             return redirect('event_proposals')
@@ -1776,7 +1867,6 @@ def cancel_page(request):
     logger.error("Payment cancelled")
     messages.error(request, "Payment was cancelled or failed.")
     return render(request, 'cancel.html', {'error': 'Payment was cancelled or failed.'})
-<<<<<<< HEAD
 
 @never_cache
 @login_required
@@ -1788,6 +1878,9 @@ def event_list(request):
     # Only show current and future events, past events should be in archived_events
     base_query = Q(date_from__gte=today) | Q(date_until__gte=today)
     
+    # Get status filter first
+    status_filter = request.GET.get('status', None)
+    
     # Filter events based on user role
     if request.user.role == 'member':
         # Members can only see approved events from their own council or global events
@@ -1797,25 +1890,39 @@ def event_list(request):
             (Q(council=request.user.council) | Q(is_global=True))
         )
     elif request.user.role == 'officer':
-        # Officers can see approved events and their own pending/rejected events
-        events = Event.objects.filter(
-            base_query & (Q(status='approved') | Q(created_by=request.user))
-        )
-        
-        # Officers should only see events from their own council or global events
-        events = events.filter(
-            Q(council=request.user.council) | Q(is_global=True)
-        )
+        # Officers can see events from their own council or global events
+        # They can see all statuses for their own events, but only approved for others
+        if status_filter and status_filter != 'all':
+            if status_filter == 'approved':
+                events = Event.objects.filter(
+                    base_query & 
+                    Q(status='approved') & 
+                    (Q(council=request.user.council) | Q(is_global=True))
+                )
+            else:
+                # For pending/rejected, only show their own events
+                events = Event.objects.filter(
+                    base_query & 
+                    Q(status=status_filter) & 
+                    Q(created_by=request.user) &
+                    (Q(council=request.user.council) | Q(is_global=True))
+                )
+        else:
+            # Default: show approved events from their council + their own events of any status
+            events = Event.objects.filter(
+                base_query & 
+                (
+                    (Q(status='approved') & (Q(council=request.user.council) | Q(is_global=True))) |
+                    Q(created_by=request.user)
+                )
+            )
     else:
-        # Admins see only approved events (not rejected or pending)
-        events = Event.objects.filter(
-            base_query & Q(status='approved')
-        )
-    
-    # Filter by status if specified
-    status_filter = request.GET.get('status', None)
-    if status_filter and status_filter != 'all':
-        events = events.filter(status=status_filter)
+        # Admins see all events from all councils
+        events = Event.objects.filter(base_query)
+        
+        # Apply status filter for admins
+        if status_filter and status_filter != 'all':
+            events = events.filter(status=status_filter)
     
     # Filter by category if specified
     category_filter = request.GET.get('category', None)
@@ -1976,15 +2083,13 @@ def council_events(request):
             events = Event.objects.all()
             council = None
     
-    # Filter by status if specified
-    status_filter = request.GET.get('status', None)
-    if status_filter and status_filter != 'all':
-        events = events.filter(status=status_filter)
-    
     # Filter by category if specified
     category_filter = request.GET.get('category', None)
     if category_filter and category_filter != 'all':
         events = events.filter(category=category_filter)
+    
+    # Get status filter
+    status_filter = request.GET.get('status', None)
     
     # Mark events as today, upcoming, or past
     todays_events = []
@@ -1996,12 +2101,14 @@ def council_events(request):
         # Check if the event is happening today
         event.is_today = (event.date_from <= today <= (event.date_until or event.date_from))
         
-        # Rejected events go straight to archives regardless of date
-        if event.status == 'rejected':
-            rejected_events.append(event)
+        # If filtering by status, only include matching events
+        if status_filter and status_filter != 'all' and event.status != status_filter:
             continue
             
-        if event.is_today:
+        # Categorize events by date and status
+        if event.status == 'rejected':
+            rejected_events.append(event)
+        elif event.is_today:
             todays_events.append(event)
         elif event.date_from > today:
             upcoming_events.append(event)
@@ -2022,8 +2129,12 @@ def council_events(request):
     # Sort today's events (approved first)
     todays_events.sort(key=lambda event: 0 if event.status == 'approved' else 1)
     
-    # Combine events: today's events first, then upcoming
-    sorted_events = todays_events + upcoming_events
+    # If filtering by rejected status, show rejected events in main list
+    if status_filter == 'rejected':
+        sorted_events = rejected_events
+    else:
+        # Combine events: today's events first, then upcoming
+        sorted_events = todays_events + upcoming_events
     
     context = {
         'events': sorted_events,
@@ -2111,6 +2222,7 @@ def user_details(request, user_id):
         'recruiter_name': user.recruiter_name,
         'voluntary_join': user.voluntary_join,
         'join_reason': user.join_reason,
+        'is_inactive': user.is_inactive_member(),
     }
     
     if user.profile_picture:
@@ -2145,17 +2257,17 @@ def event_attendance(request, event_id):
     # Check if the event is happening today
     today = date.today()
     is_today = (event.date_from <= today <= (event.date_until or event.date_from))
-    
-    # Get members based on the event's council or global status
+
+    # Get members and officers based on the event's council or global status
     if event.is_global:
         if request.user.role == 'admin':
-            # Admin can see all members for global events
-            members = User.objects.filter(role='member', is_active=True, is_archived=False).order_by('first_name', 'last_name')
+            # Admin can see all members and officers for global events
+            members = User.objects.filter(role__in=['member', 'officer'], is_active=True, is_archived=False).order_by('first_name', 'last_name')
         else:
-            # Officers can only see members from their council for global events
-            members = User.objects.filter(council=request.user.council, role='member', is_active=True, is_archived=False).order_by('first_name', 'last_name')
+            # Officers can only see members and officers from their council for global events
+            members = User.objects.filter(council=request.user.council, role__in=['member', 'officer'], is_active=True, is_archived=False).order_by('first_name', 'last_name')
     else:
-        members = User.objects.filter(council=event.council, role='member', is_active=True, is_archived=False).order_by('first_name', 'last_name')
+        members = User.objects.filter(council=event.council, role__in=['member', 'officer'], is_active=True, is_archived=False).order_by('first_name', 'last_name')
     
     # Get existing attendance records
     attendance_records = EventAttendance.objects.filter(event=event)
@@ -2224,16 +2336,16 @@ def update_attendance(request):
                     # return JsonResponse({'status': 'error', 'message': 'Can only update attendance on the day of the event'}, status=400)
                     pass
                 
-                # Get all members for this event
+                # Get all members and officers for this event
                 if event.is_global:
                     if request.user.role == 'admin':
-                        # Admin can see all members for global events
-                        members = User.objects.filter(role='member', is_active=True, is_archived=False)
+                        # Admin can see all members and officers for global events
+                        members = User.objects.filter(role__in=['member', 'officer'], is_active=True, is_archived=False)
                     else:
-                        # Officers can only see members from their council for global events
-                        members = User.objects.filter(council=request.user.council, role='member', is_active=True, is_archived=False)
+                        # Officers can only see members and officers from their council for global events
+                        members = User.objects.filter(council=request.user.council, role__in=['member', 'officer'], is_active=True, is_archived=False)
                 else:
-                    members = User.objects.filter(council=event.council, role='member', is_active=True, is_archived=False)
+                    members = User.objects.filter(council=event.council, role__in=['member', 'officer'], is_active=True, is_archived=False)
                 
                 # Update all attendance records
                 with transaction.atomic():
@@ -2266,11 +2378,28 @@ def update_attendance(request):
                 # Calculate total count based on user role and event type
                 if event.is_global:
                     if request.user.role == 'admin':
-                        total_count = User.objects.filter(role='member', is_active=True, is_archived=False).count()
+                        total_count = User.objects.filter(role__in=['member', 'officer'], is_active=True, is_archived=False).count()
                     else:
-                        total_count = User.objects.filter(council=request.user.council, role='member', is_active=True, is_archived=False).count()
+                        total_count = User.objects.filter(council=request.user.council, role__in=['member', 'officer'], is_active=True, is_archived=False).count()
                 else:
-                    total_count = User.objects.filter(council=event.council, role='member', is_active=True, is_archived=False).count()
+                    total_count = User.objects.filter(council=event.council, role__in=['member', 'officer'], is_active=True, is_archived=False).count()
+                
+                # Record activity for present members
+                from capstone_project.models import Activity
+                for member_id in present_members:
+                    try:
+                        member = User.objects.get(id=member_id)
+                        Activity.objects.get_or_create(
+                            user=member,
+                            event=event,
+                            defaults={
+                                'activity_type': 'event_attendance',
+                                'description': f'Attended {event.name}',
+                                'date_completed': timezone.now().date()
+                            }
+                        )
+                    except User.DoesNotExist:
+                        continue
                 
                 return JsonResponse({
                     'status': 'success',
@@ -2764,5 +2893,162 @@ def recalculate_degree(user):
             print(f"Error creating degree change notification: {str(e)}")
     
     return True
-=======
->>>>>>> main
+
+@never_cache
+@login_required
+def leaderboard(request):
+    """Leaderboard view showing top recruiters"""
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    
+    # Calculate date 3 months ago
+    three_months_ago = timezone.now() - timedelta(days=90)
+    
+    # Build base queryset - show all users globally for precise leaderboard
+    recruiters_query = User.objects.filter(
+        is_archived=False
+    ).annotate(
+        recruitment_count=Count('recruitments')
+    ).filter(
+        recruitment_count__gt=0
+    ).select_related('council')
+    
+    # Order the results
+    recruiters = recruiters_query.order_by('-recruitment_count', 'first_name')
+    
+    # Get all recruiters for the main leaderboard (not just top 10)
+    top_recruiters = recruiters
+    
+    # Get current user's rank and stats
+    user_rank = None
+    user_recruitment_count = request.user.recruitments.count()
+    
+    if user_recruitment_count > 0:
+        # Find user's rank in the filtered results
+        recruiters_list = list(recruiters.values_list('id', flat=True))
+        if request.user.id in recruiters_list:
+            user_rank = recruiters_list.index(request.user.id) + 1
+    
+    # Get recent recruitments for activity feed - show all globally
+    recent_recruitments_query = Recruitment.objects.select_related(
+        'recruiter', 'recruited', 'recruiter__council'
+    )
+    
+    recent_recruitments = recent_recruitments_query.order_by('-date_recruited')[:10]
+    
+    # Calculate stats for all councils for filtering functionality
+    all_councils_stats = {}
+    councils = Council.objects.all()
+    
+    for council in councils:
+        # Active recruiters: users with at least 1 recruitment in last 3 months
+        active_recruiters = User.objects.filter(
+            council=council,
+            is_archived=False,
+            recruitments__date_recruited__gte=three_months_ago
+        ).distinct()
+        
+        # All-time council recruiters for top recruiter calculation
+        council_recruiters = User.objects.filter(
+            council=council,
+            is_archived=False
+        ).annotate(
+            recruitment_count=Count('recruitments')
+        ).filter(
+            recruitment_count__gt=0
+        ).order_by('-recruitment_count')
+        
+        all_councils_stats[council.name] = {
+            'total_recruiters': active_recruiters.count(),
+            'total_recruitments': Recruitment.objects.filter(
+                recruiter__council=council
+            ).count(),
+            'top_recruiter': council_recruiters.first() if council_recruiters else None
+        }
+    
+    # Get council-specific stats for current user's council
+    council_stats = None
+    if request.user.council:
+        council_stats = all_councils_stats.get(request.user.council.name, {
+            'total_recruiters': 0,
+            'total_recruitments': 0,
+            'top_recruiter': None
+        })
+    
+    # Calculate global stats for "All Councils" filter
+    global_active_recruiters = User.objects.filter(
+        is_archived=False,
+        recruitments__date_recruited__gte=three_months_ago
+    ).distinct().count()
+    
+    global_total_recruitments = Recruitment.objects.count()
+    
+    global_top_recruiter = User.objects.filter(
+        is_archived=False
+    ).annotate(
+        recruitment_count=Count('recruitments')
+    ).filter(
+        recruitment_count__gt=0
+    ).order_by('-recruitment_count').first()
+    
+    global_stats = {
+        'total_recruiters': global_active_recruiters,
+        'total_recruitments': global_total_recruitments,
+        'top_recruiter': global_top_recruiter
+    }
+    
+    # Add recruitment dates to top_recruiters for JavaScript filtering
+    top_recruiters_with_dates = []
+    for recruiter in top_recruiters:
+        recruiter_data = {
+            'user': recruiter,
+            'recruitment_count': recruiter.recruitment_count,
+            'recent_recruitments': list(recruiter.recruitments.filter(
+                date_recruited__gte=three_months_ago
+            ).values_list('date_recruited', flat=True)),
+            'is_active': recruiter.recruitments.filter(
+                date_recruited__gte=three_months_ago
+            ).exists()
+        }
+        top_recruiters_with_dates.append(recruiter_data)
+    
+    # Convert stats to JSON-serializable format
+    import json
+    serializable_all_councils_stats = {}
+    for council_name, stats in all_councils_stats.items():
+        serializable_all_councils_stats[council_name] = {
+            'total_recruiters': stats['total_recruiters'],
+            'total_recruitments': stats['total_recruitments'],
+            'top_recruiter': {
+                'first_name': stats['top_recruiter'].first_name,
+                'last_name': stats['top_recruiter'].last_name
+            } if stats['top_recruiter'] else None
+        }
+    
+    serializable_global_stats = {
+        'total_recruiters': global_stats['total_recruiters'],
+        'total_recruitments': global_stats['total_recruitments'],
+        'top_recruiter': {
+            'first_name': global_stats['top_recruiter'].first_name,
+            'last_name': global_stats['top_recruiter'].last_name
+        } if global_stats['top_recruiter'] else None
+    }
+    
+    # Convert to JSON strings for safe template rendering
+    all_councils_stats_json = json.dumps(serializable_all_councils_stats)
+    global_stats_json = json.dumps(serializable_global_stats)
+
+    context = {
+        'top_recruiters': top_recruiters,
+        'top_recruiters_with_dates': top_recruiters_with_dates,
+        'user_rank': user_rank,
+        'user_recruitment_count': user_recruitment_count,
+        'recent_recruitments': recent_recruitments,
+        'council_stats': serializable_global_stats,  # Use global stats as default display
+        'all_councils_stats': all_councils_stats_json,
+        'global_stats': global_stats_json,
+        'three_months_ago': three_months_ago.isoformat(),
+        'user': request.user
+    }
+    
+    return render(request, 'leaderboard.html', context)

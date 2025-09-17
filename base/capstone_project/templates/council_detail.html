@@ -49,26 +49,7 @@ Knights of Columbus - {{ council.name }} Details
             </div>
             {% endif %}
 
-            {% if members %}
-            <div class="member-section">
-                <h2>Members</h2>
-                <div class="members-grid">
-                    {% for member in members %}
-                    <div class="member-card member-card-regular">
-                        <div class="member-info">
-                            <img src="{% if member.profile_picture %}{{ member.profile_picture.url }}{% else %}{% static 'images/default-profile.png' %}{% endif %}" alt="Profile Picture" class="profile-pic">
-                            <div class="member-details">
-                                <h3>{{ member.first_name }} {{ member.last_name }}</h3>
-                                <p>{{ member.get_current_degree_display|default:"" }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if not admin and not officers and not members %}
+            {% if not admin and not officers %}
             <div class="no-members">
                 <p>No members found for this council.</p>
             </div>

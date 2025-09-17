@@ -32,11 +32,12 @@ main p {
 /* Councils Grid Styles */
 .councils-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8vh;
-    max-width: 65vh;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 3rem;
+    max-width: 1000px;
     margin: 0 auto;
     margin-bottom: 4rem;
+    padding: 0 2rem;
 }
 
 .council-link {
@@ -48,11 +49,16 @@ main p {
 .council {
     background-color: #fff;
     border: 1.8px solid rgba(22, 27, 95, 0.4);
-    border-radius: 10px;
-    padding: 3vh;
+    border-radius: 15px;
+    padding: 2.5rem;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s ease; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 .council:hover {
@@ -62,9 +68,10 @@ main p {
 }
 
 .council img {
-    width: 16vh;
-    height: 16vh;
-    margin-bottom: 1vh;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1.5rem;
+    object-fit: contain;
 }
 
 .council p {
@@ -88,18 +95,19 @@ main p {
     }
 
     .councils-grid {
-        padding-bottom: 2rem;
+        padding: 0 1rem;
         grid-template-columns: 1fr;
-        max-width: 80vw;
+        max-width: 90vw;
+        gap: 2rem;
     }
 
     .council {
-        padding-bottom: 1.5vh;
-        
+        padding: 2rem;
+        min-height: 180px;
     }
 
     .council img {
-        width: 8vh;
-        height: 8vh;
+        width: 80px;
+        height: 80px;
     }
 }

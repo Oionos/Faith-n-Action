@@ -10,9 +10,9 @@ Knights of Columbus - {% if is_self %}My Activities{% else %}{{ member.first_nam
 <div class="dashboard-container">
     <div class="content-card">
         <div class="dashboard-header">
-            <h1>{% if is_self %}My Activities{% else %}{{ member.first_name }}'s Activities{% endif %}</h1>
+            <h1 style="color: var(--primary-bg);">{% if is_self %}My Activities{% else %}{{ member.first_name }}'s Activities{% endif %}</h1>
             <div>
-                <a href="{% if is_self %}{% url 'dashboard' %}{% else %}{% url 'member_list' %}{% endif %}" class="dashboard-btn secondary back-btn">
+                <a href="{% if is_self %}{% url 'dashboard' %}{% else %}{% url 'member_list' %}{% endif %}" class="dashboard-btn">
                     <i class="fas fa-arrow-left"></i> {% if is_self %}Back to Dashboard{% else %}Back to Members{% endif %}
                 </a>
             </div>
@@ -61,7 +61,7 @@ Knights of Columbus - {% if is_self %}My Activities{% else %}{{ member.first_nam
                     <div class="activity-content">
                         <h3>{{ activity.event.name }}</h3>
                         <div class="activity-meta">
-                            <span class="activity-category">{{ activity.event.category }}</span>
+                            <span class="activity-category">{{ activity.event.category }}{% if activity.event.subcategory and activity.event.subcategory != 'N/A' %} - {{ activity.event.subcategory }}{% endif %}</span>
                             <span class="activity-location">
                                 <i class="fas fa-map-marker-alt"></i> {{ activity.event.city }}, {{ activity.event.province }}
                             </span>
