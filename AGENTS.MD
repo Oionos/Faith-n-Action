@@ -128,6 +128,8 @@ interact with events, donations, and the forum. Core features:
 | 3 | Django session auth only (no JWT/OAuth) | Simpler for internal org tool; no mobile API clients | Pre-2026 |
 | 4 | Single Django app (`capstone_project`) | Avoid premature microservice complexity for org-scale | Pre-2026 |
 | 5 | PayMongo for GCash (not PayPal) | Philippine market; GCash is the dominant payment method | Pre-2026 |
+| 6 | Secrets live in `.env` / untracked files only; git history purged | Leaked RSA key + member PII DB sat in public history; keys rotated to real RSA-4096, `filter-repo` purge executed on origin | 2026-09-22 |
+| 7 | Role assignment only via explicit admin actions — no username-based shortcuts | SEC-1 `Mr_Admin` backdoor removed from `User.save()`; regression tests in `capstone_project/tests.py` | 2026-09-22 |
 
 ---
 
@@ -343,6 +345,7 @@ Immediate next step:
 - warnings.filterwarnings in settings.py suppresses valid DB access warnings; do not add more.
 - `send_message` creates Notification objects via bulk_create directly — does NOT use create_notification util.
 - `get_messages` local variable named `messages` shadows django.contrib.messages import — rename to `msgs` in extraction.
+- Every "✅ FIXED" claim in §5 must cite file:line plus a passing test; D-1/D-2/D-9/D-10 were false when audited 2026-09-22.
 
 ### Platform & Tool Limits
 - django-ratelimit requires Redis or Memcached; DatabaseCache backend is non-functional.
