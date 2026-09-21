@@ -14,12 +14,13 @@ from capstone_project.views import PRIVATE_KEY, PUBLIC_KEY
 
 logger = logging.getLogger(__name__)
 
+
 class BlockchainTests(TestCase):
     def setUp(self):
         """Set up test environment with blockchain, council, user, and donations."""
         # Create council
         self.council = Council.objects.create(id=1, name="Test Council", district="Test District")
-        
+
         # Create admin user
         self.user = User.objects.create_user(
             username="test_admin",
@@ -27,14 +28,14 @@ class BlockchainTests(TestCase):
             role="admin",
             council=self.council
         )
-        
+
         # Initialize blockchain
         Blockchain.objects.all().delete()
         Block.objects.all().delete()
         Donation.objects.all().delete()
         self.blockchain = Blockchain.objects.create(pending_transactions=[])
         self.blockchain.initialize_chain()
-        
+
         # Create donations
         self.donation1 = Donation.objects.create(
             transaction_id=f"GCASH-{uuid.uuid4().hex[:8]}",
@@ -51,7 +52,7 @@ class BlockchainTests(TestCase):
         )
         self.donation1.sign_donation(PRIVATE_KEY)
         self.donation1.save()
-        
+
         self.donation2 = Donation.objects.create(
             transaction_id=f"GCASH-{uuid.uuid4().hex[:8]}",
             first_name="Jane",
@@ -67,18 +68,18 @@ class BlockchainTests(TestCase):
         )
         self.donation2.sign_donation(PRIVATE_KEY)
         self.donation2.save()
-        
+
         # Add donations to blockchain
         self.blockchain.add_transaction(self.donation1, PUBLIC_KEY)
         previous_block = self.blockchain.get_previous_block()
         proof = self.blockchain.proof_of_work(previous_block['proof'])
         self.blockchain.create_block(proof)
-        
+
         self.blockchain.add_transaction(self.donation2, PUBLIC_KEY)
         previous_block = self.blockchain.get_previous_block()
         proof = self.blockchain.proof_of_work(previous_block['proof'])
         self.blockchain.create_block(proof)
-        
+
         logger.info("Test setup complete: 2 donations, 3 blocks (genesis + 2)")
 
     def test_immutability_block_modification(self):
@@ -122,7 +123,6 @@ class BlockchainTests(TestCase):
         donation.save()
         self.assertFalse(donation.verify_signature(PUBLIC_KEY))
         logger.info("Untamperability test passed: Signature invalid after tampering")
-
     def test_data_integrity(self):
         """Test that the blockchain maintains hash links and proof-of-work."""
         self.assertTrue(self.blockchain.is_chain_valid())
@@ -168,12 +168,12 @@ class BlockchainTests(TestCase):
         donation.sign_donation(PRIVATE_KEY)
         donation.save()
         self.assertTrue(donation.verify_signature(PUBLIC_KEY))
-        
+
         self.blockchain.add_transaction(donation, PUBLIC_KEY)
         previous_block = self.blockchain.get_previous_block()
         proof = self.blockchain.proof_of_work(previous_block['proof'])
         block = self.blockchain.create_block(proof)
-        
+
         self.assertTrue(self.blockchain.is_chain_valid())
         chain = self.blockchain.get_chain()
         self.assertEqual(len(chain), 4)  # Genesis + 3 blocks
@@ -192,3 +192,4 @@ class BlockchainTests(TestCase):
         ]
         self.assertIn(expected_transaction, block_transactions)
         logger.info("Donation flow test passed: Donation recorded on blockchain")
+

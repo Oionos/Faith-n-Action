@@ -1,0 +1,19 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+*.pem
+*.sqlite3
+*.log
+__pycache__/
+*.pyc
+.venv/
+venv/
+staticfiles/
+media/
+docs/audit/
+test-run*.log
+test-run.pid
+*.exe
+et --hard*

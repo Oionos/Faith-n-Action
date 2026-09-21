@@ -159,7 +159,7 @@ PAYMONGO_SECRET_KEY = config('PAYMONGO_SECRET_KEY', default='')  # Rename and ad
 # Security settings for production
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 28800  # 8 hours (was 20 minutes)
-SESSION_SAVE_EVERY_REQUEST = True  # Save the session on every request
+SESSION_SAVE_EVERY_REQUEST = config('SESSION_SAVE_EVERY_REQUEST', default=False, cast=bool)  # True forces a DB write per request (PERF-1)
 CSRF_COOKIE_AGE = 28800  # Match session cookie age
 CSRF_USE_SESSIONS = True  # Store CSRF token in the session instead of cookie
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
@@ -168,6 +168,7 @@ CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', default=0, cast=int)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=False, cast=bool)
 SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', default=False, cast=bool)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if config('BEHIND_TLS_PROXY', default=False, cast=bool) else None
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 

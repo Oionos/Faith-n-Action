@@ -1,0 +1,16 @@
+# Proposed production/test dependencies — PENDING APPROVAL per GLOBAL_AGENTS.MD G2.
+# Do not install until approved. Pinned to versions compatible with Django 5.2.
+
+# --- production serving ---
+gunicorn==23.0.0          # WSGI server (PERF-11)
+whitenoise==6.9.0         # static file serving without nginx for simple deploys
+
+# --- database (recommended: PostgreSQL instead of SQLite) ---
+psycopg[binary]==3.2.9    # PostgreSQL driver; requires settings DATABASE_URL wiring
+
+# --- security hardening (SEC-10) ---
+django-ratelimit==4.1.0   # sign-in/password-reset throttling; needs Redis or Memcached
+
+# --- testing / quality (SEC-16, QA plan) ---
+coverage==7.8.0           # statement/branch coverage for manage.py test
+locust==2.37.0            # alternative load testing if the stdlib script is outgrown

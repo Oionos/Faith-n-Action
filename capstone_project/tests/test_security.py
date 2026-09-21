@@ -28,4 +28,3 @@ class RegistrationSecurityTests(TestCase):
         user.first_name = 'Changed'
         user.save()
         self.assertEqual(User.objects.get(pk=user.pk).role, 'member')
-

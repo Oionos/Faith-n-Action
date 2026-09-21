@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Donation Reports{% endblock %}
+
+{% block content %}
+<style>
+    .report-wrap { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    .report-card {
+        background: #fff; border-radius: 0.5rem; padding: 2rem;
+        box-shadow: 0 2px 8px rgba(13, 52, 113, 0.12);
+        border-top: 4px solid #f4b41a;
+    }
+    .report-card h1 { color: #0d3471; font-size: 1.5rem; margin: 0 0 0.5rem; }
+    .report-card p { color: #5a6270; line-height: 1.6; }
+    .report-note {
+        background: #f0f1f6; border-left: 4px solid #0d3471;
+        padding: 1rem; border-radius: 0 0.5rem 0.5rem 0; margin-top: 1rem;
+        font-size: 0.95rem; color: #333;
+    }
+    .report-actions { margin-top: 1.5rem; }
+    .report-actions a {
+        display: inline-block; background: #f4b41a; color: #0d3471;
+        font-weight: 600; padding: 0.6rem 1.2rem; border-radius: 0.5rem;
+        text-decoration: none;
+    }
+    .report-actions a:hover { background: #d99f0e; }
+</style>
+
+<div class="report-wrap">
+    <div class="report-card">
+        <h1>Donation Reports</h1>
+        <p>
+            Consolidated donation reporting for council officers and administrators,
+            covering GCash (PayMongo) and manual cash donations recorded on the
+            blockchain ledger.
+        </p>
+        <div class="report-note">
+            Detailed per-council and per-period report data is being wired to this
+            page. In the meantime, individual donation records are available from
+            the <a href="{% url 'donations' %}">Donations</a> page and the
+            <a href="{% url 'blockchain' %}">Blockchain ledger</a>.
+        </div>
+        <div class="report-actions">
+            <a href="{% url 'donations' %}">View Donations</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
