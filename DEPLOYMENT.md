@@ -18,20 +18,22 @@ python manage.py test capstone_project.tests.test_security      # one module
 python manage.py test capstone_project.tests.test_permissions.PermissionMatrixTests
 ```
 
-Current baseline: **25 tests, 0 failures, 0 errors, 5 expected failures.**
-Expected failures are deliberate — each documents a confirmed defect in
-`views.py` that requires owner approval to fix (AGENTS.MD §6):
+Current baseline: **27 tests, 0 failures, 0 errors — no expected failures.**
+Coverage (`coverage run --source=capstone_project manage.py test`): **51% total**,
+`models.py` 81%, `views.py` 35%. The formerly expected-failing tests were guards
+for defects fixed 2026-09-22 — they now run as permanent regression guards:
 
-| Test | Defect | Fix needed |
-|---|---|---|
-| `test_member_cannot_read_other_members_full_details` | SEC-5 IDOR — member reads any member's PII | scope `user_details` by role |
-| `test_anonymous_update_degree_is_rejected_not_500` | SEC-8 duplicate `update_degree` def lost `@login_required` | delete one duplicate (views.py:874 vs 2151) |
-| `test_anonymous_member_list_rejected_not_500` | `member_list` (views.py:1968) lacks `@login_required` | add decorator |
-| `test_amount_mismatch_does_not_complete_donation` | SEC-6 payment amount never verified | compare source amount to donation amount |
-| `test_completed_donation_cannot_be_reconfirmed` | Http404 falls into broad `except` -> UnboundLocalError -> 500 | catch Http404 before the generic handler |
+| Guard | Defect (fixed) |
+|---|---|
+| `test_member_cannot_read_other_members_full_details` | SEC-5 IDOR — `user_details` scoped by role |
+| `test_anonymous_update_degree_is_rejected_not_500` | SEC-8 duplicate `update_degree` removed, decorators restored |
+| `test_anonymous_member_list_rejected_not_500` | `member_list` gained `@login_required` |
+| `test_anonymous_council_members_rejected_not_500` | `council_members` gained `@login_required` |
+| `test_amount_mismatch_does_not_complete_donation` | SEC-6 PayMongo amount verified (centavos) |
+| `test_completed_donation_cannot_be_reconfirmed` | Http404 re-raised, no more UnboundLocalError 500 |
 
-When a fix lands, the test flips to *unexpected success* — remove the
-`@unittest.expectedFailure` decorator and keep the test as a permanent guard.
+Known remaining gaps (next targets): registration POST flow (sign-up view),
+event lifecycle views, forum send/delete/pin, file-upload validation.
 
 ## Stress testing
 
@@ -47,7 +49,9 @@ production load requires PostgreSQL (see requirements-prod.txt).
 
 ## Production deployment (Docker)
 
-Requires approving and installing `requirements-prod.txt` first (G2 rule).
+`requirements-prod.txt` is approved and installed (gunicorn, whitenoise,
+psycopg, django-ratelimit, coverage). Note: gunicorn runs in the Docker
+image (Linux); locust is omitted on Windows — see the file's note.
 
 ```powershell
 docker compose up --build -d        # gunicorn behind nginx (deploy/nginx.conf)
@@ -63,7 +67,8 @@ and real PayMongo/SendGrid keys.
 ## Pre-go-live checklist
 
 - [ ] `python manage.py check --deploy` clean
-- [ ] `python manage.py test` green (expected failures resolved or accepted)
+- [ ] `python manage.py test` green (27 tests) — keep it green
+- [ ] Postgres provisioned and `DATABASE_URL` set (SQLite default is dev-parity only)
 - [ ] SEC-5, SEC-6, SEC-8, member_list fixes applied (views.py — needs owner approval)
 - [ ] `SECRET_KEY` rotated (post-breach), `DEBUG=False` verified on the host
 - [ ] New RSA-4096 keys generated on the host; PEMs mounted as secrets, never in the image

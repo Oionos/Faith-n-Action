@@ -6,11 +6,13 @@ gunicorn==23.0.0          # WSGI server (PERF-11)
 whitenoise==6.9.0         # static file serving without nginx for simple deploys
 
 # --- database (recommended: PostgreSQL instead of SQLite) ---
-psycopg[binary]==3.2.9    # PostgreSQL driver; requires settings DATABASE_URL wiring
+psycopg[binary]==3.2.10   # PostgreSQL driver; requires settings DATABASE_URL wiring
 
 # --- security hardening (SEC-10) ---
 django-ratelimit==4.1.0   # sign-in/password-reset throttling; needs Redis or Memcached
 
 # --- testing / quality (SEC-16, QA plan) ---
 coverage==7.8.0           # statement/branch coverage for manage.py test
-locust==2.37.0            # alternative load testing if the stdlib script is outgrown
+# locust: dropped for now — its gevent dependency has no Python 3.14 wheel on
+# Windows. scripts/stress_test.py (stdlib) covers baseline load testing; revisit
+# locust inside the Docker image (Linux) if richer load scenarios are needed.

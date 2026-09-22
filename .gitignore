@@ -12,6 +12,9 @@
 
 # Logs
 *.log
+.coverage
+*.pid
+coverage-report.txt
 
 # Python
 __pycache__/

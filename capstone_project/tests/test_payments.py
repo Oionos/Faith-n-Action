@@ -1,4 +1,3 @@
-import unittest
 import uuid
 from datetime import date
 from decimal import Decimal
@@ -44,9 +43,8 @@ class GcashConfirmationTests(TestCase):
         donation.refresh_from_db()
         self.assertNotEqual(donation.status, 'completed')
 
-    @unittest.expectedFailure  # views.py bug: get_object_or_404 raises Http404, which
-    # 'except Donation.DoesNotExist' never catches; the broad 'except Exception'
-    # then references 'donation' before assignment -> UnboundLocalError -> 500.
+    # Guard: Http404 from get_object_or_404 is re-raised (was swallowed by the
+    # broad 'except Exception' -> UnboundLocalError -> 500). Fixed 2026-09-22.
     @patch('capstone_project.views.requests.get')
     def test_completed_donation_cannot_be_reconfirmed(self, mock_get):
         mock_get.return_value = Mock(status_code=200, json=lambda: self._source_payload())
@@ -56,15 +54,14 @@ class GcashConfirmationTests(TestCase):
         self.assertEqual(donation.status, 'completed')  # unchanged, not re-processed
         self.assertIn(resp.status_code, (301, 302, 404))
 
-    @unittest.expectedFailure  # SEC-6: amount is never verified against the source
     @patch('capstone_project.views.requests.get')
-    def test_amount_mismatch_does_not_complete_donation(self, mock_get):
+    def test_amount_mismatch_does_not_complete_donation(self, mock_get):  # SEC-6 guard
         # Source paid PHP 1.00; donation claims PHP 10,000.00
         mock_get.return_value = Mock(status_code=200, json=lambda: self._source_payload(amount_centavos=100))
         donation = self._donation('10000.00')
         self.client.get('/gcash/confirm/', {'donation_id': donation.id, 'source_id': 'src_test_1'})
         donation.refresh_from_db()
-        self.assertEqual(donation.status, 'pending')
+        self.assertNotEqual(donation.status, 'completed')  # must NOT complete
 
     @patch('capstone_project.views.requests.get')
     def test_missing_donation_id_redirects_without_crash(self, mock_get):

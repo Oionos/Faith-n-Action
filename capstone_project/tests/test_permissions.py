@@ -1,5 +1,3 @@
-import unittest
-
 from django.test import Client, TestCase
 
 from capstone_project.models import Council, User
@@ -77,25 +75,19 @@ class PermissionMatrixTests(TestCase):
             resp = self.client.get(url)
             self.assertLess(resp.status_code, 500, f'member GET {url} -> {resp.status_code}')
 
-    @unittest.expectedFailure  # views.py:1968 — member_list has no @login_required and
-    # dereferences request.user.role on AnonymousUser -> AttributeError -> 500.
-    def test_anonymous_member_list_rejected_not_500(self):
+    def test_anonymous_member_list_rejected_not_500(self):  # guard: member_list now has @login_required
         resp = self.client.get('/member-list/')
         self.assertIn(resp.status_code, (301, 302, 403, 404))
 
-    @unittest.expectedFailure  # views.py:2012 — council_members has no @login_required and
-    # dereferences request.user.role on AnonymousUser -> AttributeError -> 500.
-    def test_anonymous_council_members_rejected_not_500(self):
+    def test_anonymous_council_members_rejected_not_500(self):  # guard: council_members now has @login_required
         resp = self.client.get('/council-members/')
         self.assertIn(resp.status_code, (301, 302, 403, 404))
 
-    @unittest.expectedFailure  # SEC-5: user_details has no member-scope check
-    def test_member_cannot_read_other_members_full_details(self):
+    def test_member_cannot_read_other_members_full_details(self):  # SEC-5 guard (fixed 2026-09-22)
         self.client.force_login(self.member)
         resp = self.client.get(f'/user/{self.other_member.id}/details/')
         self.assertEqual(resp.status_code, 403)
 
-    @unittest.expectedFailure  # SEC-8: duplicate update_degree def at views.py:2151 lost @login_required
-    def test_anonymous_update_degree_is_rejected_not_500(self):
+    def test_anonymous_update_degree_is_rejected_not_500(self):  # SEC-8 guard (duplicate def removed)
         resp = self.client.get(f'/update-degree/{self.member.id}/')
         self.assertIn(resp.status_code, (301, 302, 403, 404))

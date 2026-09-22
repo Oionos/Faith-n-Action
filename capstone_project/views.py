@@ -2,7 +2,7 @@ from .models import User, Council, Event, Analytics, Donation, Blockchain, block
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.contrib.sessions.models import Session
@@ -871,29 +871,6 @@ def analytics_form(request):
 
 @never_cache
 @login_required
-def update_degree(request, user_id):
-    if request.user.role not in ['officer', 'admin']:
-        return redirect('dashboard')
-    user = get_object_or_404(User, id=user_id, is_archived=False)
-    # Allow admin to modify any user, officer can only modify members in their council
-    if request.user.role == 'officer' and (user.role != 'member' or user.council != request.user.council):
-        return redirect('dashboard')
-    if request.method == 'POST':
-        degree = request.POST.get('current_degree')
-        print(f"Received degree: {degree}")
-        valid_degrees = [choice[0] for choice in User.DEGREE_CHOICES]
-        print(f"Valid degrees: {valid_degrees}")
-        if degree in valid_degrees:
-            user.current_degree = degree
-            user.save()
-            print(f"User {user.username}'s degree updated to {degree} by {request.user.username}")
-        else:
-            print(f"Invalid degree {degree} selected for user {user.username}")
-        return redirect('dashboard')
-    return render(request, 'update_degree.html', {'user': user})
-
-@never_cache
-@login_required
 def edit_profile(request):
     user = request.user
     if request.method == 'POST':
@@ -1731,6 +1708,16 @@ def confirm_gcash_payment(request):
             messages.error(request, "Payment could not be verified.")
             return redirect('donations')
 
+        # SEC-6: verify the paid amount matches the donation (PayMongo amounts are centavos)
+        expected_amount = int(donation.amount * 100)
+        source_amount = source_data['data']['attributes'].get('amount')
+        if source_amount != expected_amount:
+            logger.error(f"Amount mismatch for donation ID {donation_id}: expected {expected_amount} centavos, source paid {source_amount}")
+            donation.status = 'failed'
+            donation.save()
+            messages.error(request, "Payment amount verification failed. Please contact support.")
+            return redirect('donations')
+
         with transaction.atomic():
             donation.status = 'completed'
             donation.source_id = source_id
@@ -1784,6 +1771,9 @@ def confirm_gcash_payment(request):
     except Donation.DoesNotExist:
         logger.error(f"Donation ID {donation_id} not found or invalid")
         messages.error(request, "Donation not found or already processed.")
+    except Http404:
+        # get_object_or_404 raises Http404, not DoesNotExist — let Django render 404
+        raise
     except requests.exceptions.RequestException as e:
         error_detail = e.response.json().get('errors', [{}])[0].get('detail', str(e)) if e.response else str(e)
         logger.error(f"PayMongo verification error for donation ID {donation_id}: {error_detail}")
@@ -1965,6 +1955,7 @@ def event_list(request):
     
     return render(request, 'event_list.html', context)
 
+@login_required
 def member_list(request):
     """View for displaying a list of all members (for admin users)"""
     if request.user.role != 'admin':
@@ -2009,6 +2000,7 @@ def member_list(request):
     
     return render(request, 'member_list.html', context)
 
+@login_required
 def council_members(request):
     """View for displaying members of a specific council (for officer users)"""
     if request.user.role not in ['admin', 'officer']:
@@ -2148,6 +2140,8 @@ def council_events(request):
     
     return render(request, 'council_events.html', context)
 
+@never_cache
+@login_required
 def update_degree(request, user_id):
     """View for updating a member's degree"""
     if request.user.role not in ['admin', 'officer']:
@@ -2155,8 +2149,8 @@ def update_degree(request, user_id):
     
     user = get_object_or_404(User, id=user_id)
     
-    # Check if officer is trying to update a user from another council
-    if request.user.role == 'officer' and user.council != request.user.council:
+    # Officers may only update members of their own council (not officers/admins)
+    if request.user.role == 'officer' and (user.role != 'member' or user.council != request.user.council):
         messages.error(request, "You can only update members from your own council.")
         return redirect('council_members')
     
@@ -2192,6 +2186,10 @@ def user_details(request, user_id):
     
     # If officer, they can only see details of users in their council
     if request.user.role == 'officer' and user.council != request.user.council:
+        return JsonResponse({'error': 'Not authorized'}, status=403)
+
+    # Members and pending users may only view their own details (SEC-5)
+    if request.user.role in ('member', 'pending') and user.id != request.user.id:
         return JsonResponse({'error': 'Not authorized'}, status=403)
     
     data = {
