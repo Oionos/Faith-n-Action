@@ -18,10 +18,20 @@ python manage.py test capstone_project.tests.test_security      # one module
 python manage.py test capstone_project.tests.test_permissions.PermissionMatrixTests
 ```
 
-Current baseline: **27 tests, 0 failures, 0 errors — no expected failures.**
-Coverage (`coverage run --source=capstone_project manage.py test`): **51% total**,
-`models.py` 81%, `views.py` 35%. The formerly expected-failing tests were guards
-for defects fixed 2026-09-22 — they now run as permanent regression guards:
+Current baseline: **58 tests, 0 failures, 0 errors, 2 expected failures.**
+Coverage (`coverage run --source=capstone_project manage.py test`): **61% total**,
+`models.py` 82%, `views.py` 48%.
+
+The 2 expected failures are deliberate, documented sign-up gaps in `views.py`
+that need owner approval to fix:
+- `test_e_signature_content_type_spoof_rejected` — SEC-14: `content_type` is
+  client-controlled; text bytes with an image content-type pass. Fix: decode
+  the image with Pillow, don't trust the header.
+- `test_weak_password_rejected` — sign-up uses `create_user` directly so
+  `AUTH_PASSWORD_VALIDATORS` never run; trivial passwords are accepted. Fix:
+  call `django.contrib.auth.password_validation.validate_password` first.
+
+Tranche-2 guards now in place (all passing):
 
 | Guard | Defect (fixed) |
 |---|---|
@@ -31,6 +41,7 @@ for defects fixed 2026-09-22 — they now run as permanent regression guards:
 | `test_anonymous_council_members_rejected_not_500` | `council_members` gained `@login_required` |
 | `test_amount_mismatch_does_not_complete_donation` | SEC-6 PayMongo amount verified (centavos) |
 | `test_completed_donation_cannot_be_reconfirmed` | Http404 re-raised, no more UnboundLocalError 500 |
+| `test_officer_batch_marks_attendance` | batch attendance 500 — dead `Activity` import removed |
 
 Known remaining gaps (next targets): registration POST flow (sign-up view),
 event lifecycle views, forum send/delete/pin, file-upload validation.
