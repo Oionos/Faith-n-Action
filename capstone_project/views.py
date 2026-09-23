@@ -1121,10 +1121,17 @@ def get_notifications(request):
     
     notifications_data = []
     for notif in notifications:
+        if notif.message_id:
+            sender = notif.message.sender.username
+            content = notif.message.content
+        else:
+            # Degree-change/system notifications carry no ForumMessage
+            sender = 'System'
+            content = notif.content or notif.title or ''
         notifications_data.append({
             'id': notif.id,
-            'sender': notif.message.sender.username,
-            'content': notif.message.content[:100] + '...' if len(notif.message.content) > 100 else notif.message.content,
+            'sender': sender,
+            'content': content[:100] + '...' if len(content) > 100 else content,
             'timestamp': notif.timestamp.strftime('%Y-%m-%d %H:%M')
         })
     

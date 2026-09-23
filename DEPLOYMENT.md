@@ -18,9 +18,9 @@ python manage.py test capstone_project.tests.test_security      # one module
 python manage.py test capstone_project.tests.test_permissions.PermissionMatrixTests
 ```
 
-Current baseline: **62 tests, 0 failures, 0 errors, 0 expected failures.**
-Coverage (`coverage run --source=capstone_project manage.py test`): **63% total**,
-`models.py` 82%, `views.py` 50%.
+Current baseline: **95 tests, 0 failures, 0 errors, 0 expected failures.**
+Coverage (`coverage run --source=capstone_project manage.py test`): **69% total**,
+`models.py` 82%, `views.py` 57%.
 
 Sign-up hardening (2026-09-22, all guarded by tests):
 - E-signature uploads are **decode-validated** via a shared
@@ -45,9 +45,22 @@ Guards in place (all passing):
 | `test_e_signature_content_type_spoof_rejected` | SEC-14 — uploads decode-validated, not header-trusted |
 | `test_weak_password_rejected` / `test_password_similar_to_username_rejected` | password validators enforced on sign-up |
 | `test_weak_password_change_rejected` / `test_invalid_cropped_image_rejected` | same enforcement in `edit_profile` |
+| `test_title_only_notification_does_not_crash` | `get_notifications` AttributeError on `message=None` (degree-change rows) fixed |
+| `test_admin_adds_manual_recruitment_and_degree_recalculates` | recruitment create + `recalculate_degree` promotion side-effects verified |
+| `test_cannot_mark_another_users_notification` | `mark_notification_read` scoped to owner (404) |
+| `test_officer_cannot_move_member_from_another_council` | `change_council` officer scope guard |
 
-Known remaining gaps (next targets): recruitment lineage, notifications,
-event lifecycle views, forum send/delete/pin, file-upload validation.
+Notification wiring gap (2026-09-22): `get_notifications` and
+`mark_notification_read` have **no URL routes** in either URLconf, and
+`base.html`'s "notification" container is the Django messages toast system —
+so `Notification` rows written by `send_message` and `recalculate_degree`
+are never displayed anywhere. The views are tested directly via
+RequestFactory (`test_notifications.py`). Decision needed: wire the routes
+(feature add) or remove the dead views.
+
+Known remaining gaps (next targets): GCash initiate/confirm views, council
+CRUD, QR attendance scanning, event media gallery, CSV/PDF exports,
+`manage_roles`, `manage_pending_users`.
 
 ## Stress testing
 
@@ -81,7 +94,7 @@ and real PayMongo/SendGrid keys.
 ## Pre-go-live checklist
 
 - [ ] `python manage.py check --deploy` clean
-- [ ] `python manage.py test` green (27 tests) — keep it green
+- [ ] `python manage.py test` green (95 tests) — keep it green
 - [ ] Postgres provisioned and `DATABASE_URL` set (SQLite default is dev-parity only)
 - [ ] SEC-5, SEC-6, SEC-8, member_list fixes applied (views.py — needs owner approval)
 - [ ] `SECRET_KEY` rotated (post-breach), `DEBUG=False` verified on the host
