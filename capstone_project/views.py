@@ -2382,23 +2382,11 @@ def update_attendance(request):
                 else:
                     total_count = User.objects.filter(council=event.council, role__in=['member', 'officer'], is_active=True, is_archived=False).count()
                 
-                # Record activity for present members
-                from capstone_project.models import Activity
-                for member_id in present_members:
-                    try:
-                        member = User.objects.get(id=member_id)
-                        Activity.objects.get_or_create(
-                            user=member,
-                            event=event,
-                            defaults={
-                                'activity_type': 'event_attendance',
-                                'description': f'Attended {event.name}',
-                                'date_completed': timezone.now().date()
-                            }
-                        )
-                    except User.DoesNotExist:
-                        continue
-                
+                # NOTE: activity audit-logging removed — it imported a nonexistent
+                # `Activity` model and returned HTTP 500 AFTER the attendance rows
+                # were committed. Reintroduce once an Activity model + migration
+                # is approved.
+
                 return JsonResponse({
                     'status': 'success',
                     'present_count': present_count,
