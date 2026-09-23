@@ -18,20 +18,20 @@ python manage.py test capstone_project.tests.test_security      # one module
 python manage.py test capstone_project.tests.test_permissions.PermissionMatrixTests
 ```
 
-Current baseline: **58 tests, 0 failures, 0 errors, 2 expected failures.**
-Coverage (`coverage run --source=capstone_project manage.py test`): **61% total**,
-`models.py` 82%, `views.py` 48%.
+Current baseline: **62 tests, 0 failures, 0 errors, 0 expected failures.**
+Coverage (`coverage run --source=capstone_project manage.py test`): **63% total**,
+`models.py` 82%, `views.py` 50%.
 
-The 2 expected failures are deliberate, documented sign-up gaps in `views.py`
-that need owner approval to fix:
-- `test_e_signature_content_type_spoof_rejected` — SEC-14: `content_type` is
-  client-controlled; text bytes with an image content-type pass. Fix: decode
-  the image with Pillow, don't trust the header.
-- `test_weak_password_rejected` — sign-up uses `create_user` directly so
-  `AUTH_PASSWORD_VALIDATORS` never run; trivial passwords are accepted. Fix:
-  call `django.contrib.auth.password_validation.validate_password` first.
+Sign-up hardening (2026-09-22, all guarded by tests):
+- E-signature uploads are **decode-validated** via a shared
+  `_validate_uploaded_image()` helper — the client-supplied `content_type` is no
+  longer trusted; format comes from Pillow, with a 40 MP decompression-bomb cap.
+- `AUTH_PASSWORD_VALIDATORS` now run on **both** sign-up and `edit_profile`
+  (previously bypassed, so `password='123'` was accepted).
+- `edit_profile` profile-picture writes (base64 `cropped_image`) are
+  decode-validated too — this previously raised `UnidentifiedImageError` → HTTP 500.
 
-Tranche-2 guards now in place (all passing):
+Guards in place (all passing):
 
 | Guard | Defect (fixed) |
 |---|---|
@@ -42,8 +42,11 @@ Tranche-2 guards now in place (all passing):
 | `test_amount_mismatch_does_not_complete_donation` | SEC-6 PayMongo amount verified (centavos) |
 | `test_completed_donation_cannot_be_reconfirmed` | Http404 re-raised, no more UnboundLocalError 500 |
 | `test_officer_batch_marks_attendance` | batch attendance 500 — dead `Activity` import removed |
+| `test_e_signature_content_type_spoof_rejected` | SEC-14 — uploads decode-validated, not header-trusted |
+| `test_weak_password_rejected` / `test_password_similar_to_username_rejected` | password validators enforced on sign-up |
+| `test_weak_password_change_rejected` / `test_invalid_cropped_image_rejected` | same enforcement in `edit_profile` |
 
-Known remaining gaps (next targets): registration POST flow (sign-up view),
+Known remaining gaps (next targets): recruitment lineage, notifications,
 event lifecycle views, forum send/delete/pin, file-upload validation.
 
 ## Stress testing

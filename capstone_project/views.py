@@ -2,6 +2,7 @@ from .models import User, Council, Event, Analytics, Donation, Blockchain, block
 from django.contrib.auth.decorators import login_required, permission_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -154,6 +155,34 @@ def sign_in(request):
     return render(request, 'sign-in.html')
 
 
+def _validate_uploaded_image(uploaded_file, allowed_formats=('JPEG', 'PNG', 'GIF'), max_pixels=40_000_000):
+    """Decode-validate an uploaded image (SEC-14).
+
+    Never trusts the client-supplied ``content_type`` — the format is whatever
+    Pillow can actually decode. Caps total pixels to blunt decompression bombs.
+    Returns ``(ok, error_message)`` and rewinds the stream on the way out so the
+    caller can still persist the file.
+    """
+    try:
+        from PIL import Image
+        probe = Image.open(uploaded_file)
+        fmt = (probe.format or '').upper()
+        width, height = probe.size  # must be read before verify(), which consumes it
+        probe.verify()              # raises on non-image / truncated data
+    except Exception:
+        return False, 'The uploaded file is not a valid image.'
+    finally:
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+    if fmt not in allowed_formats:
+        return False, f'Unsupported image format ({fmt or "unknown"}). Use JPG, PNG or GIF.'
+    if width * height > max_pixels:
+        return False, 'Image dimensions are too large.'
+    return True, None
+
+
 @never_cache
 def sign_up(request):
     if request.user.is_authenticated:
@@ -206,6 +235,18 @@ def sign_up(request):
         if password != re_password:
             print("Validation failed: Passwords do not match")
             messages.error(request, 'Passwords do not match')
+            return render(request, 'sign-up.html', {'councils': councils})
+
+        # Enforce AUTH_PASSWORD_VALIDATORS (create_user does not run them).
+        # An unsaved User instance lets the similarity validator do its job.
+        try:
+            validate_password(password, user=User(
+                username=username or '', email=email or '',
+                first_name=first_name or '', last_name=last_name or '',
+            ))
+        except ValidationError as exc:
+            for msg in exc.messages:
+                messages.error(request, msg)
             return render(request, 'sign-up.html', {'councils': councils})
 
         if not username:
@@ -269,11 +310,12 @@ def sign_up(request):
             messages.error(request, 'E-signature file size exceeds 10MB limit')
             return render(request, 'sign-up.html', {'councils': councils})
         
-        # Check e-signature file type
-        allowed_types = ['image/jpeg', 'image/png', 'image/gif']
-        if hasattr(e_signature, 'content_type') and e_signature.content_type not in allowed_types:
-            print(f"Validation failed: Invalid e-signature file type: {e_signature.content_type}")
-            messages.error(request, f'E-signature must be a JPG, PNG, or GIF image. Detected: {e_signature.content_type}')
+        # Validate e-signature content by decoding it (SEC-14): the client-supplied
+        # content_type is not trustworthy, so the format is derived server-side.
+        image_ok, image_error = _validate_uploaded_image(e_signature)
+        if not image_ok:
+            print(f"Validation failed: E-signature rejected — {image_error}")
+            messages.error(request, f'E-signature rejected: {image_error}')
             return render(request, 'sign-up.html', {'councils': councils})
 
         try:
@@ -894,16 +936,30 @@ def edit_profile(request):
             user.gender = request.POST.get('gender', user.gender)
             user.religion = request.POST.get('religion', user.religion)
 
-            # Update password if provided
+            # Update password if provided — enforce AUTH_PASSWORD_VALIDATORS
             password = request.POST.get('password')
             if password:
+                try:
+                    validate_password(password, user=user)
+                except ValidationError as exc:
+                    for msg in exc.messages:
+                        messages.error(request, msg)
+                    return render(request, 'edit_profile.html', {'user': user})
                 user.set_password(password)
 
-            # Handle profile picture
+            # Handle profile picture — decode-validate before storing (SEC-14)
             cropped_image = request.POST.get('cropped_image')
             if cropped_image:
-                format, imgstr = re.match(r'data:image/(\w+);base64,(.+)', cropped_image).groups()
-                image_data = base64.b64decode(imgstr)
+                try:
+                    format, imgstr = re.match(r'data:image/(\w+);base64,(.+)', cropped_image).groups()
+                    image_data = b64decode(imgstr)
+                except Exception:
+                    messages.error(request, 'Invalid profile image data.')
+                    return render(request, 'edit_profile.html', {'user': user})
+                image_ok, image_error = _validate_uploaded_image(BytesIO(image_data))
+                if not image_ok:
+                    messages.error(request, f'Profile picture rejected: {image_error}')
+                    return render(request, 'edit_profile.html', {'user': user})
                 filename = f'{user.username}_profile.jpg'
                 user.profile_picture.save(filename, ContentFile(image_data), save=False)
 

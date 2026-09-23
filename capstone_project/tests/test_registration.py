@@ -1,8 +1,18 @@
+import io
+
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from unittest import expectedFailure
+from PIL import Image as PILImage
 
 from capstone_project.models import Council, User
+
+
+def _png_bytes():
+    """A genuinely decodable 2x2 PNG. Required since e-signature uploads are now
+    validated by decoding (SEC-14 fix) rather than trusting the content-type."""
+    buf = io.BytesIO()
+    PILImage.new('RGB', (2, 2), 'white').save(buf, format='PNG')
+    return buf.getvalue()
 
 
 class SignUpViewTests(TestCase):
@@ -23,7 +33,7 @@ class SignUpViewTests(TestCase):
             'contact_number': '09171234567', 'council': self.council.id,
             'practical_catholic': 'Yes', 'privacy_agreement': 'agree',
             'voluntary_join': 'on',
-            'e_signature': SimpleUploadedFile('sig.png', b'\x89PNG-fake', content_type='image/png'),
+            'e_signature': SimpleUploadedFile('sig.png', _png_bytes(), content_type='image/png'),
         }
         data.update(overrides)
         return data
@@ -82,20 +92,49 @@ class SignUpViewTests(TestCase):
         self._post(e_signature=SimpleUploadedFile('sig.txt', b'plain', content_type='text/plain'))
         self.assertFalse(User.objects.filter(username='newmember').exists())
 
-    @expectedFailure  # SEC-14: content_type is client-controlled — text bytes with an
-    # image content-type pass. Fix: validate by decoding the image, not the header.
-    def test_e_signature_content_type_spoof_rejected(self):
+    def test_e_signature_content_type_spoof_rejected(self):  # SEC-14 guard
         self._post(e_signature=SimpleUploadedFile('sig.png', b'this is not an image', content_type='image/png'))
         self.assertFalse(User.objects.filter(username='newmember').exists())
 
-    @expectedFailure  # views.py uses create_user directly — AUTH_PASSWORD_VALIDATORS
-    # never run on this path, so trivial passwords are accepted today.
-    def test_weak_password_rejected(self):
+    def test_weak_password_rejected(self):  # AUTH_PASSWORD_VALIDATORS guard
         self._post(password='123', re_password='123')
         self.assertFalse(User.objects.filter(username='newmember').exists())
+
+    def test_password_similar_to_username_rejected(self):
+        self._post(username='juandelacruz', email='jdc@example.com',
+                   password='juandelacruz', re_password='juandelacruz')
+        self.assertFalse(User.objects.filter(username='juandelacruz').exists())
 
     def test_authenticated_user_redirected_to_dashboard(self):
         User.objects.create_user(username='logged', password='pass12345!', role='member', council=self.council)
         self.client.force_login(User.objects.get(username='logged'))
         resp = self.client.get('/sign-up/')
         self.assertEqual(resp.status_code, 302)
+
+
+class EditProfilePasswordTests(TestCase):
+    """edit_profile must apply the same AUTH_PASSWORD_VALIDATORS as sign-up."""
+
+    def setUp(self):
+        self.council = Council.objects.create(id=1, name='Test Council', district='Test District')
+        self.user = User.objects.create_user(username='pwuser', password='Str0ng-Pass-123!',
+                                             role='member', council=self.council)
+        self.client.force_login(self.user)
+
+    def test_weak_password_change_rejected(self):
+        self.client.post('/edit-profile/', {'password': '123'})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('Str0ng-Pass-123!'))
+
+    def test_strong_password_change_accepted(self):
+        self.client.post('/edit-profile/', {'password': 'An0ther-Str0ng-Pass!'})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('An0ther-Str0ng-Pass!'))
+
+    def test_invalid_cropped_image_rejected(self):
+        import base64 as _b64
+        bogus = 'data:image/png;base64,' + _b64.b64encode(b'not really an image').decode()
+        self.client.post('/edit-profile/', {'cropped_image': bogus})
+        self.user.refresh_from_db()
+        self.assertFalse(bool(self.user.profile_picture))
+
