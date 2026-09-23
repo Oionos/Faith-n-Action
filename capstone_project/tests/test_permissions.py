@@ -6,10 +6,9 @@ from capstone_project.models import Council, User
 class PermissionMatrixTests(TestCase):
     """Role-based access control exercised across the URL surface.
 
-    Two tests are marked expectedFailure: they document SEC-5 (IDOR in
-    user_details) and SEC-8 (duplicate undecorated update_degree). When the
-    corresponding views.py fix lands, each flips to 'unexpected success' —
-    that is the signal to remove the decorator and keep the test as a guard.
+    SEC-5 (IDOR in user_details) and SEC-8 (duplicate undecorated
+    update_degree) are fixed as of 2026-09-22; the tests that documented them
+    are no longer marked expectedFailure and now serve as permanent guards.
     """
 
     ADMIN_MUTATION_PATHS = [

@@ -9,13 +9,12 @@ from capstone_project.models import Council, Donation, User
 
 
 class GcashConfirmationTests(TestCase):
-    """Payment-confirmation integrity (SEC-6).
+    """Payment-confirmation integrity (SEC-6) — fixed 2026-09-22.
 
-    confirm_gcash_payment fetches the PayMongo source server-side but never
-    compares the source amount to the donation amount, and accepts both ids
-    from the query string. The mismatch test is expectedFailure until
-    views.py gains amount validation; an unexpected success means the fix
-    landed and the decorator should be removed.
+    confirm_gcash_payment now verifies the PayMongo source amount against the
+    donation amount (centavos) before completing. These tests guard that
+    behaviour; they passed as expectedFailures before the fix and are now
+    ordinary regression guards.
     """
 
     def setUp(self):
